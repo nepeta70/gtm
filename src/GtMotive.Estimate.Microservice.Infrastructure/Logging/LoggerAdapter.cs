@@ -9,21 +9,16 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Logging
     /// Class to implement the IAppLogger interface.
     /// </summary>
     /// <typeparam name="T">Type of object.</typeparam>
-    public class LoggerAdapter<T> : IAppLogger<T>
+    /// <remarks>
+    /// Initializes a new instance of the <see cref="LoggerAdapter{T}"/> class.
+    /// </remarks>
+    /// <param name="loggerFactory">Type used to configure the logging system and create instances of ILogger.</param>
+    public class LoggerAdapter<T>(ILoggerFactory loggerFactory) : IAppLogger<T>
     {
         /// <summary>
         /// Logger's interface.
         /// </summary>
-        private readonly ILogger<T> _logger;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LoggerAdapter{T}"/> class.
-        /// </summary>
-        /// <param name="loggerFactory">Type used to configure the logging system and create instances of ILogger.</param>
-        public LoggerAdapter(ILoggerFactory loggerFactory)
-        {
-            _logger = loggerFactory.CreateLogger<T>();
-        }
+        private readonly ILogger<T> _logger = loggerFactory.CreateLogger<T>();
 
         /// <summary>
         /// Formats and writes a warning log message.

@@ -6,14 +6,9 @@ using Microsoft.ApplicationInsights;
 namespace GtMotive.Estimate.Microservice.Infrastructure.Telemetry
 {
     [ExcludeFromCodeCoverage]
-    public class AppTelemetry : ITelemetry
+    public class AppTelemetry(TelemetryClient telemetry) : ITelemetry
     {
-        private readonly TelemetryClient _telemetryClient;
-
-        public AppTelemetry(TelemetryClient telemetry)
-        {
-            _telemetryClient = telemetry;
-        }
+        private readonly TelemetryClient _telemetryClient = telemetry;
 
         public void TrackEvent(string eventName, IDictionary<string, string> properties = null, IDictionary<string, double> metrics = null)
         {
