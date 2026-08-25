@@ -1,0 +1,13 @@
+﻿using System;
+
+namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models
+{
+    /// <summary>
+    /// Input message for the Create Vehicle use case.
+    /// </summary>
+    /// <param name="Brand">Vehicle brand.</param>
+    /// <param name="Model">Vehicle model.</param>
+    /// <param name="LicensePlate">Vehicle license plate.</param>
+    /// <param name="ManufactureDate">Vehicle manufacture date.</param>
+    public sealed record CreateVehicleInput(string Brand, string Model, string LicensePlate, DateTime ManufactureDate) : IUseCaseInput;
+}
