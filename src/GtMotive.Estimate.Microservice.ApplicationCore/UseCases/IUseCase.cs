@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases
 {
@@ -13,7 +14,8 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases
         /// Executes the Use Case.
         /// </summary>
         /// <param name="input">Input Message.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Task.</returns>
-        Task Execute(TUseCaseInput input);
+        Task Execute(TUseCaseInput input, CancellationToken cancellationToken = default);
     }
 }
