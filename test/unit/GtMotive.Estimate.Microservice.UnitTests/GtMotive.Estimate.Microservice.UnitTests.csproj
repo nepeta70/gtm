@@ -20,7 +20,6 @@
 
     <ItemGroup>
         <Folder Include="Api\" />
-        <Folder Include="ApplicationCore\" />
         <Folder Include="Domain\" />
         <Folder Include="Infrastructure\" />
     </ItemGroup>
