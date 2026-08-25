@@ -92,18 +92,18 @@
         <PackageReference Update="Polly.Contrib.Simmy" Version="0.3.0" />
 
         <!-- Testing -->
-        <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-        <PackageReference Update="xunit" Version="2.9.2" />
-        <PackageReference Update="xunit.runner.visualstudio" Version="2.4.5" />
+        <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+        <PackageReference Update="xunit" Version="2.9.3" />
+        <PackageReference Update="xunit.runner.visualstudio" Version="3.0.1" />
         <PackageReference Update="FluentAssertions" Version="7.0.0" />
-        <PackageReference Update="coverlet.collector" Version="3.1.2" />
-        <PackageReference Update="Microsoft.AspNetCore.TestHost" Version="6.0.0" />
+        <PackageReference Update="coverlet.collector" Version="6.0.4" />
+        <PackageReference Update="Microsoft.AspNetCore.TestHost" Version="9.0.2" />
         <PackageReference Update="Acheve.TestHost" Version="3.3.0" />
-        <PackageReference Update="Microsoft.Extensions.Hosting" Version="6.0.0" />
-        <PackageReference Update="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
-        <PackageReference Update="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
+        <PackageReference Update="Microsoft.Extensions.Hosting" Version="9.0.2" />
+        <PackageReference Update="Microsoft.Extensions.Logging.Console" Version="9.0.2" />
+        <PackageReference Update="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.2" />
         <PackageReference Update="Respawn" Version="6.2.1" />
-        <PackageReference Update="Moq" Version="4.18.1" />
+        <PackageReference Update="Moq" Version="4.20.72" />
 
         <!-- DbUp -->
         <PackageReference Update="dbup-sqlserver" Version="4.5.0" />
