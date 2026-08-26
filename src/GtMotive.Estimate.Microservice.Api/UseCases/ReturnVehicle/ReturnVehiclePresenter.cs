@@ -2,7 +2,7 @@
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Ports;
 using Microsoft.AspNetCore.Http;
 
-namespace GtMotive.Estimate.Microservice.Api.UseCases.Vehicles
+namespace GtMotive.Estimate.Microservice.Api.UseCases.ReturnVehicle
 {
     public sealed class ReturnVehiclePresenter : IReturnVehicleOutputPort, IWebApiPresenter
     {

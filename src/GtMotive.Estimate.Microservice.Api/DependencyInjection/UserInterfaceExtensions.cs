@@ -1,7 +1,7 @@
 ﻿using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ListAvailableVehicles;
 using GtMotive.Estimate.Microservice.Api.UseCases.RentVehicle;
-using GtMotive.Estimate.Microservice.Api.UseCases.Vehicles;
+using GtMotive.Estimate.Microservice.Api.UseCases.ReturnVehicle;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Ports;
