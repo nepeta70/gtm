@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ListAvailableVehicles;
@@ -54,7 +55,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             })
             .WithName("ListAvailableVehicles")
             .WithSummary("Lists vehicles currently available for rent")
-            .Produces<ListAvailableVehiclesInput>(StatusCodes.Status200OK);
+            .Produces<IReadOnlyCollection<AvailableVehicleDto>>(StatusCodes.Status200OK);
 
             group.MapPost("{id:guid}/rent", async (
                 Guid id,
