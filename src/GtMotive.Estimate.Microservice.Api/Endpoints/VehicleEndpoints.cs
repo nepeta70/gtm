@@ -4,13 +4,10 @@ using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ListAvailableVehicles;
 using GtMotive.Estimate.Microservice.Api.UseCases.RentVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.Vehicles;
-using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle;
+using GtMotive.Estimate.Microservice.ApplicationCore.UseCases;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models;
-using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles.Models;
-using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
-using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -28,7 +25,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
             group.MapPost(string.Empty, async (
                 CreateVehicleRequest request,
-                CreateVehicleUseCase useCase,
+                IUseCase<CreateVehicleInput> useCase,
                 CreateVehiclePresenter presenter,
                 CancellationToken ct) =>
             {
@@ -47,7 +44,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             .Produces<Guid>(StatusCodes.Status201Created);
 
             group.MapGet("available", async (
-                ListAvailableVehiclesUseCase useCase,
+                IUseCase<ListAvailableVehiclesInput> useCase,
                 ListAvailableVehiclesPresenter presenter,
                 CancellationToken ct) =>
             {
@@ -62,7 +59,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             group.MapPost("{id:guid}/rent", async (
                 Guid id,
                 RentVehicleRequest request,
-                RentVehicleUseCase useCase,
+                IUseCase<RentVehicleInput> useCase,
                 RentVehiclePresenter presenter,
                 CancellationToken ct) =>
             {
@@ -78,7 +75,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
             group.MapPost("{id:guid}/return", async (
                 Guid id,
-                ReturnVehicleUseCase useCase,
+                IUseCase<ReturnVehicleInput> useCase,
                 ReturnVehiclePresenter presenter,
                 CancellationToken ct) =>
             {
