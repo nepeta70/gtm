@@ -3,10 +3,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using GtMotive.Estimate.Microservice.Api.Authorization;
 using GtMotive.Estimate.Microservice.Api.DependencyInjection;
+using GtMotive.Estimate.Microservice.Api.Endpoints;
 using GtMotive.Estimate.Microservice.Api.Filters;
 using GtMotive.Estimate.Microservice.ApplicationCore;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 [assembly: CLSCompliant(false)]
@@ -40,6 +42,14 @@ namespace GtMotive.Estimate.Microservice.Api
             services.AddMediatR(typeof(ApiConfiguration).GetTypeInfo().Assembly);
             services.AddUseCases();
             services.AddPresenters();
+            services.AddExceptionHandler<DomainExceptionHandler>();
+            services.AddProblemDetails();
+        }
+
+        public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder app)
+        {
+            app.MapVehicles();
+            return app;
         }
     }
 }
