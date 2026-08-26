@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
 
 namespace GtMotive.Estimate.Microservice.Api.UseCases
 {
     public interface IWebApiPresenter
     {
-        IActionResult ActionResult { get; }
+        IResult Result { get; }
     }
 }
