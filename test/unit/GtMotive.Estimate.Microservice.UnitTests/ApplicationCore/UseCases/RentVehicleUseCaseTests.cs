@@ -20,7 +20,8 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
     /// </summary>
     public sealed class RentVehicleUseCaseTests
     {
-        private readonly Mock<IVehicleRepository> _vehicleRepository = new(MockBehavior.Strict);
+        private readonly Mock<IVehicleWriteRepository> _vehicleRepository = new(MockBehavior.Strict);
+        private readonly Mock<IVehicleReadRepository> _vehicleReadRepository = new(MockBehavior.Strict);
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<IRentVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<RentVehicleUseCase>> _logger = new();
@@ -84,7 +85,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Setup(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None))
                 .ReturnsAsync(vehicle);
 
-            _vehicleRepository
+            _vehicleReadRepository
                 .Setup(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None))
                 .ReturnsAsync(true);
 
@@ -95,7 +96,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             await act.Should().ThrowAsync<DomainException>();
 
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
-            _vehicleRepository.Verify(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None), Times.Once);
+            _vehicleReadRepository.Verify(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None), Times.Once);
 
             VerifyNoOtherCalls();
         }
@@ -114,7 +115,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Setup(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None))
                 .ReturnsAsync(vehicle);
 
-            _vehicleRepository
+            _vehicleReadRepository
                 .Setup(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None))
                 .ReturnsAsync(false);
 
@@ -163,7 +164,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             vehicle.Status.Should().Be(VehicleStatus.Rented);
 
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
-            _vehicleRepository.Verify(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None), Times.Once);
+            _vehicleReadRepository.Verify(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(), Times.Once);
             _telemetry.Verify(
@@ -182,6 +183,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private RentVehicleUseCase CreateSut() =>
             new(
                 _vehicleRepository.Object,
+                _vehicleReadRepository.Object,
                 _unitOfWork.Object,
                 _outputPort.Object,
                 _logger.Object,
@@ -191,6 +193,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private void VerifyNoOtherCalls()
         {
             _vehicleRepository.VerifyNoOtherCalls();
+            _vehicleReadRepository.VerifyNoOtherCalls();
             _unitOfWork.VerifyNoOtherCalls();
             _outputPort.VerifyNoOtherCalls();
             _telemetry.VerifyNoOtherCalls();

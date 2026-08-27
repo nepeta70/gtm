@@ -13,9 +13,9 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableV
     /// </summary>
     /// <param name="vehicleRepository">The vehicle repository instance.</param>
     /// <param name="outputPort">The output port handler for returning the response.</param>
-    public class ListAvailableVehiclesUseCase(IVehicleRepository vehicleRepository, IListAvailableVehiclesOutputPort outputPort) : IUseCase<ListAvailableVehiclesInput>
+    public class ListAvailableVehiclesUseCase(IVehicleReadRepository vehicleRepository, IListAvailableVehiclesOutputPort outputPort) : IUseCase<ListAvailableVehiclesInput>
     {
-        private readonly IVehicleRepository _vehicleRepository = vehicleRepository;
+        private readonly IVehicleReadRepository _vehicleRepository = vehicleRepository;
         private readonly IListAvailableVehiclesOutputPort _outputPort = outputPort;
 
         /// <summary>

@@ -19,7 +19,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
     /// </summary>
     public sealed class CreateVehicleUseCaseTests
     {
-        private readonly Mock<IVehicleRepository> _vehicleRepository = new(MockBehavior.Strict);
+        private readonly Mock<IVehicleWriteRepository> _vehicleRepository = new(MockBehavior.Strict);
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<ICreateVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<CreateVehicleUseCase>> _logger = new();
@@ -57,7 +57,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                                 It.Is<Vehicle>(v =>
                                     v.Brand == input.Brand &&
                                     v.Model == input.Model &&
-                                    v.LicensePlate == input.LicensePlate &&
+                                    v.LicensePlate.Value == input.LicensePlate &&
                                     v.ManufactureDate == input.ManufactureDate &&
                                     v.Id != Guid.Empty),
                                 CancellationToken.None))

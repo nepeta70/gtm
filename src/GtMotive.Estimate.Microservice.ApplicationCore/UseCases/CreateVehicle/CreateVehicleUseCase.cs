@@ -20,7 +20,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
     /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
     /// <param name="bus">The message bus abstraction for domain event publishing.</param>
     public sealed class CreateVehicleUseCase(
-        IVehicleRepository vehicleRepository,
+        IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         ICreateVehicleOutputPort outputPort,
         IAppLogger<CreateVehicleUseCase> logger,
@@ -51,7 +51,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
 
             var vehicleCreatedEvent = new VehicleCreatedEvent(
                 vehicle.Id,
-                vehicle.LicensePlate,
+                vehicle.LicensePlate.Value,
                 DateTime.UtcNow);
 
             telemetry.TrackEvent(
@@ -72,7 +72,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
                 vehicle.Id,
                 vehicle.Brand,
                 vehicle.Model,
-                vehicle.LicensePlate,
+                vehicle.LicensePlate.Value,
                 vehicle.ManufactureDate));
         }
     }

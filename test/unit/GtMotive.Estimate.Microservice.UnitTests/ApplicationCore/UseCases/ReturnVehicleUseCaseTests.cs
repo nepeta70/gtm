@@ -19,7 +19,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
     /// </summary>
     public sealed class ReturnVehicleUseCaseTests
     {
-        private readonly Mock<IVehicleRepository> _vehicleRepository = new(MockBehavior.Strict);
+        private readonly Mock<IVehicleWriteRepository> _vehicleRepository = new(MockBehavior.Strict);
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<IReturnVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<ReturnVehicleUseCase>> _logger = new();

@@ -15,13 +15,15 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
     /// Enforces the business rule that a single person cannot have more than one active rental at a time.
     /// </summary>
     /// <param name="vehicleRepository">The vehicle repository persistence port.</param>
+    /// <param name="vehicleReadRepository">The vehicle read repository persistence port.</param>
     /// <param name="unitOfWork">The unit of work port for transaction boundary management.</param>
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
     /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
     /// <param name="bus">The message bus abstraction for domain event publishing.</param>
     public sealed class RentVehicleUseCase(
-        IVehicleRepository vehicleRepository,
+        IVehicleWriteRepository vehicleRepository,
+        IVehicleReadRepository vehicleReadRepository,
         IUnitOfWork unitOfWork,
         IRentVehicleOutputPort outputPort,
         IAppLogger<RentVehicleUseCase> logger,
@@ -49,7 +51,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
                 return;
             }
 
-            var renterHasActiveRental = await vehicleRepository.HasActiveRentalAsync(input.RenterId, cancellationToken).ConfigureAwait(false);
+            var renterHasActiveRental = await vehicleReadRepository.HasActiveRentalAsync(input.RenterId, cancellationToken).ConfigureAwait(false);
 
             if (renterHasActiveRental)
             {

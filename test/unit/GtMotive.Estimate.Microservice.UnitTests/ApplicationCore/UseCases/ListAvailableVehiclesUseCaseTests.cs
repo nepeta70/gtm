@@ -19,7 +19,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
     /// </summary>
     public sealed class ListAvailableVehiclesUseCaseTests
     {
-        private readonly Mock<IVehicleRepository> _vehicleRepository = new(MockBehavior.Strict);
+        private readonly Mock<IVehicleReadRepository> _vehicleRepository = new(MockBehavior.Strict);
         private readonly Mock<IListAvailableVehiclesOutputPort> _outputPort = new(MockBehavior.Strict);
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         public async Task ExecuteWhenAvailableVehiclesExistMapsAndPresentsOutput()
         {
             var input = new ListAvailableVehiclesInput();
-            var vehicles = new List<Vehicle>
+            var vehicles = new List<VehicleReadModel>
             {
                 new(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1)),
                 new(Guid.NewGuid(), "Seat", "Leon", "5678DEF", DateTime.UtcNow.AddYears(-2))

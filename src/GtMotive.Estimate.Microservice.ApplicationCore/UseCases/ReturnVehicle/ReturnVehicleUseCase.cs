@@ -19,7 +19,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
     /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
     /// <param name="bus">The message bus abstraction for domain event publishing.</param>
     public sealed class ReturnVehicleUseCase(
-        IVehicleRepository vehicleRepository,
+        IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         IReturnVehicleOutputPort outputPort,
         IAppLogger<ReturnVehicleUseCase> logger,
