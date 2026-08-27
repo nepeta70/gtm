@@ -1,4 +1,5 @@
 ﻿using System;
+using GtMotive.Estimate.Microservice.Domain.ValueObjects;
 
 namespace GtMotive.Estimate.Microservice.Domain.Entities
 {
@@ -38,17 +39,14 @@ namespace GtMotive.Estimate.Microservice.Domain.Entities
                 throw new DomainException("Vehicle model is required.");
             }
 
-            if (string.IsNullOrWhiteSpace(licensePlate))
-            {
-                throw new DomainException("Vehicle license plate is required.");
-            }
+            ArgumentNullException.ThrowIfNull(licensePlate);
 
             EnsureManufactureDateIsValid(manufactureDate);
 
             Id = id;
             Brand = brand;
             Model = model;
-            LicensePlate = licensePlate;
+            LicensePlate = LicensePlate.Create(licensePlate);
             ManufactureDate = manufactureDate.Date;
             Status = VehicleStatus.Available;
             RenterId = null;
@@ -81,7 +79,7 @@ namespace GtMotive.Estimate.Microservice.Domain.Entities
         /// <summary>
         /// Gets the vehicle license plate.
         /// </summary>
-        public string LicensePlate { get; private set; }
+        public LicensePlate LicensePlate { get; private set; }
 
         /// <summary>
         /// Gets the vehicle manufacture date.
