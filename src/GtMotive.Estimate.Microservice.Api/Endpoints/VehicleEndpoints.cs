@@ -42,7 +42,8 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             })
             .WithName("CreateVehicle")
             .WithSummary("Registers a new vehicle in the fleet")
-            .Produces<Guid>(StatusCodes.Status201Created);
+            .Produces<Guid>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
             group.MapGet("available", async (
                 IUseCase<ListAvailableVehiclesInput> useCase,
@@ -72,7 +73,9 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             })
             .WithName("RentVehicle")
             .WithSummary("Rents an available vehicle")
-            .Produces(StatusCodes.Status204NoContent);
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
             group.MapPost("{id:guid}/return", async (
                 Guid id,
@@ -88,7 +91,9 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             })
             .WithName("ReturnVehicle")
             .WithSummary("Returns a previously rented vehicle")
-            .Produces(StatusCodes.Status204NoContent);
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status400BadRequest);
 
             return app;
         }
