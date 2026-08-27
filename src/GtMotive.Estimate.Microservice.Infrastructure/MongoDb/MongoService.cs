@@ -4,15 +4,8 @@ using MongoDB.Driver;
 
 namespace GtMotive.Estimate.Microservice.Infrastructure.MongoDb
 {
-    public class MongoService
+    public class MongoService(IOptions<MongoDbSettings> options)
     {
-        public MongoService(IOptions<MongoDbSettings> options)
-        {
-            MongoClient = new MongoClient(options.Value.ConnectionString);
-
-            // Add call to RegisterBsonClasses() method.
-        }
-
-        public MongoClient MongoClient { get; }
+        public MongoClient MongoClient { get; } = new MongoClient(options.Value.ConnectionString);
     }
 }
