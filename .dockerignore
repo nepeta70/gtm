@@ -1,0 +1,45 @@
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Test results
+**/TestResults/
+
+# Coverage
+**/coverage/
+
+# Logs
+*.log
+**/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Secrets (never copy into image)
+**/appsettings.*.json
+!**/appsettings.json
+!**/appsettings.Development.json
+
+# NuGet
+*.nupkg
+
+# Temporary files
+*.tmp
+*.temp
