@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
+using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus;
 using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.Interfaces;
@@ -46,14 +47,18 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
             });
             services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
             services.AddScoped<IVehicleWriteRepository, MongoVehicleRepository>();
-            services.AddScoped<IBus, NoOpBus>();
+
             if (!isDevelopment)
             {
                 services.AddScoped<ITelemetry, AppTelemetry>();
                 services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+                services.AddScoped<IBus, NoOpBus>();
+                services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
             }
             else
             {
+                services.AddScoped<IBus, NoOpBus>();
+                services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
                 services.AddScoped<ITelemetry, NoOpTelemetry>();
                 services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
             }
