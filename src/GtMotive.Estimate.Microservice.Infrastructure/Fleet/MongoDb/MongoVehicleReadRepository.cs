@@ -8,17 +8,15 @@ using MongoDB.Driver;
 
 namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
 {
-    /// <summary>
-    /// MongoDB implementation of the <see cref="IVehicleReadRepository"/> interface.
-    /// </summary>
-    /// <param name="database">The MongoDB database instance.</param>
-    public sealed class MongoVehicleReadRepository(IMongoDatabase database) : IVehicleReadRepository
+    public sealed class MongoVehicleReadRepository(IMongoDatabase database, IAppLogger<MongoVehicleReadRepository> logger) : IVehicleReadRepository
     {
         private readonly IMongoCollection<VehicleDocument> _collection = database.GetCollection<VehicleDocument>("vehicles");
 
         public async Task<IReadOnlyCollection<VehicleReadModel>> GetAvailableAsync(CancellationToken cancellationToken)
         {
             var minimumDate = DateTime.UtcNow.Date.AddYears(-Vehicle.MaxManufactureAgeInYears);
+
+            logger.LogInformation("Retrieving available vehicles manufactured on or after {MinimumDate}", minimumDate);
 
             var cursor = await _collection
                 .Find(d => d.Status == VehicleStatus.Available &&
@@ -32,17 +30,25 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
+            logger.LogInformation("Found {Count} available vehicles", cursor.Count);
+
             return cursor;
         }
 
         public async Task<bool> HasActiveRentalAsync(string renterId, CancellationToken cancellationToken)
         {
+            logger.LogInformation("Checking for active rentals for renter {RenterId}", renterId);
+
             var count = await _collection
                 .Find(d => d.Status == VehicleStatus.Rented && d.RenterId == renterId)
                 .CountDocumentsAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            return count > 0;
+            var hasActiveRental = count > 0;
+
+            logger.LogInformation("Renter {RenterId} active rental check returned {HasActiveRental}", renterId, hasActiveRental);
+
+            return hasActiveRental;
         }
     }
 }
