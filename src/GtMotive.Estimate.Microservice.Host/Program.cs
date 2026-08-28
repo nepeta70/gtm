@@ -5,6 +5,7 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using GtMotive.Estimate.Microservice.Api;
+using GtMotive.Estimate.Microservice.Api.Endpoints;
 using GtMotive.Estimate.Microservice.Host.Configuration;
 using GtMotive.Estimate.Microservice.Host.DependencyInjection;
 using GtMotive.Estimate.Microservice.Infrastructure;
@@ -23,11 +24,11 @@ using Serilog.Sinks.SystemConsole.Themes;
 
 var builder = WebApplication.CreateBuilder();
 
+builder.Configuration.AddJsonFile("serilogsettings.json", optional: false, reloadOnChange: true);
+
 // Configuration.
 if (!builder.Environment.IsDevelopment())
 {
-    builder.Configuration.AddJsonFile("serilogsettings.json", optional: false, reloadOnChange: true);
-
     var secretClient = new SecretClient(
         new Uri($"https://{builder.Configuration.GetValue<string>("KeyVaultName")}.vault.azure.net/"),
         new DefaultAzureCredential());
@@ -61,7 +62,6 @@ var appSettingsSection = builder.Configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
 var appSettings = appSettingsSection.Get<AppSettings>();
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
-
 builder.Services.AddControllers(ApiConfiguration.ConfigureControllers)
     .WithApiControllers();
 
@@ -134,10 +134,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSwaggerInApplication(pathBase, builder.Configuration);
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapApiEndpoints();
+app.MapVehicles();
 
 await app.RunAsync();
