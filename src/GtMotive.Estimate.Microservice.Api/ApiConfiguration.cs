@@ -40,7 +40,7 @@ namespace GtMotive.Estimate.Microservice.Api
             services.AddMediatR(typeof(ApiConfiguration).GetTypeInfo().Assembly);
             services.AddUseCases();
             services.AddPresenters();
-            services.AddExceptionHandler<DomainExceptionHandler>();
+            services.AddExceptionHandler<BusinessExceptionHandler>();
             services.AddProblemDetails();
         }
     }

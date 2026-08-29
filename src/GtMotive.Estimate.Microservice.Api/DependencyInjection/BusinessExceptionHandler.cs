@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
 {
-    public sealed class DomainExceptionHandler : IExceptionHandler
+    public sealed class BusinessExceptionHandler : IExceptionHandler
     {
         public async ValueTask<bool> TryHandleAsync(
             HttpContext httpContext,
@@ -20,7 +20,7 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
             ArgumentNullException.ThrowIfNull(httpContext);
             ArgumentNullException.ThrowIfNull(exception);
 
-            var appLogger = httpContext.RequestServices.GetRequiredService<IAppLogger<DomainExceptionHandler>>();
+            var appLogger = httpContext.RequestServices.GetRequiredService<IAppLogger<BusinessExceptionHandler>>();
 
             appLogger.LogError(exception, "Exception captured in DomainExceptionHandler.");
 
