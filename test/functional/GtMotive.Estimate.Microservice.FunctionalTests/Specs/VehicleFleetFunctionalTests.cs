@@ -74,7 +74,7 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Specs
                 var vehicleId = GetOkValue<Guid>(createPresenter.Result);
 
                 var rentUseCase = sp.GetRequiredService<IUseCase<RentVehicleInput>>();
-                await rentUseCase.Execute(new RentVehicleInput(vehicleId, "renter-1"));
+                await rentUseCase.Execute(new RentVehicleInput(vehicleId, "renter-2"));
 
                 var returnUseCase = sp.GetRequiredService<IUseCase<ReturnVehicleInput>>();
                 await returnUseCase.Execute(new ReturnVehicleInput(vehicleId));
