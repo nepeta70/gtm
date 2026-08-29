@@ -4,12 +4,11 @@
         <TargetFramework>net9.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <NoWarn>1591</NoWarn>
-        <NoWarn>xUnit1000</NoWarn>
+        <NoWarn>$(NoWarn);CS1591;xUnit1000</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Moq" Version="4.16.0" />
+        <PackageReference Include="Moq" />
     </ItemGroup>
 
     <ItemGroup>

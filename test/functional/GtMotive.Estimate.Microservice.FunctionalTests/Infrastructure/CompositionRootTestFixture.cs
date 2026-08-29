@@ -12,7 +12,7 @@ using Xunit;
 
 namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
 {
-    internal sealed class CompositionRootTestFixture : IDisposable, IAsyncLifetime
+    public sealed class CompositionRootTestFixture : IDisposable, IAsyncLifetime
     {
         private readonly ServiceProvider _serviceProvider;
 
@@ -82,6 +82,15 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             }
 
             await handlerAction.Invoke(handler);
+        }
+
+        public async Task UsingScope(Func<IServiceProvider, Task> scopedAction)
+        {
+            ArgumentNullException.ThrowIfNull(scopedAction);
+
+            using var scope = _serviceProvider.CreateScope();
+
+            await scopedAction.Invoke(scope.ServiceProvider);
         }
 
         public void Dispose()
