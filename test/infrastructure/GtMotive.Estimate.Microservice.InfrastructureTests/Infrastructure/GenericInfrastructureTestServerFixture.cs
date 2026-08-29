@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using Testcontainers.MongoDb;
 using Xunit;
 
 [assembly: CLSCompliant(false)]
@@ -16,11 +17,20 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
     public sealed class GenericInfrastructureTestServerFixture : IDisposable, IAsyncLifetime
     {
         private readonly string _testDbName;
+        private readonly MongoDbContainer _mongoContainer;
         private IMongoClient _mongoClient;
 
         public GenericInfrastructureTestServerFixture()
         {
             _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
+            _mongoContainer = new MongoDbBuilder().Build();
+        }
+
+        public TestServer Server { get; private set; }
+
+        public async Task InitializeAsync()
+        {
+            await _mongoContainer.StartAsync();
 
             var hostBuilder = new WebHostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -33,18 +43,14 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
                     builder.AddEnvironmentVariables();
                     builder.AddInMemoryCollection(new Dictionary<string, string>
                     {
+                        ["MongoDb:ConnectionString"] = _mongoContainer.GetConnectionString(),
                         ["MongoDb:MongoDbDatabaseName"] = _testDbName
                     });
                 })
                 .UseStartup<Startup>();
 
             Server = new TestServer(hostBuilder);
-        }
 
-        public TestServer Server { get; }
-
-        public async Task InitializeAsync()
-        {
             _mongoClient = Server.Host.Services.GetRequiredService<IMongoClient>();
             await _mongoClient.DropDatabaseAsync(_testDbName);
         }
@@ -55,6 +61,8 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             {
                 await _mongoClient.DropDatabaseAsync(_testDbName);
             }
+
+            await _mongoContainer.DisposeAsync();
         }
 
         public void Dispose()

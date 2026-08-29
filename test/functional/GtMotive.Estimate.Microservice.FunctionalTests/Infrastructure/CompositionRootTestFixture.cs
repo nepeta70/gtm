@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using Testcontainers.MongoDb;
 using Xunit;
 
 [assembly: CLSCompliant(false)]
@@ -16,24 +18,41 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
 {
     public sealed class CompositionRootTestFixture : IDisposable, IAsyncLifetime
     {
-        private readonly ServiceProvider _serviceProvider;
-        private readonly IMongoClient _mongoClient;
         private readonly string _testDbName;
+        private readonly MongoDbContainer _mongoContainer;
+
+        private ServiceProvider _serviceProvider;
+        private IMongoClient _mongoClient;
 
         public CompositionRootTestFixture()
         {
+            _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
+            _mongoContainer = new MongoDbBuilder().Build();
+        }
+
+        public IConfiguration Configuration { get; private set; }
+
+        public async Task InitializeAsync()
+        {
+            await _mongoContainer.StartAsync();
+
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddEnvironmentVariables()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["MongoDb:ConnectionString"] = _mongoContainer.GetConnectionString(),
+                    ["MongoDb:DatabaseName"] = _testDbName,
+                    ["MongoDb:MongoDbDatabaseName"] = _testDbName
+                })
                 .Build();
 
-            var services = new ServiceCollection();
             Configuration = configuration;
+
+            var services = new ServiceCollection();
             ConfigureServices(services);
             services.AddSingleton<IConfiguration>(configuration);
             services.Configure<MongoDbSettings>(Configuration.GetSection("MongoDb"));
-
-            _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
 
             var dbDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IMongoDatabase));
             if (dbDescriptor is not null)
@@ -46,25 +65,25 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
 
             _serviceProvider = services.BuildServiceProvider();
             _mongoClient = _serviceProvider.GetRequiredService<IMongoClient>();
-        }
 
-        public IConfiguration Configuration { get; }
-
-        public async Task InitializeAsync()
-        {
             await _mongoClient.DropDatabaseAsync(_testDbName);
         }
 
         public async Task DisposeAsync()
         {
-            await _mongoClient.DropDatabaseAsync(_testDbName);
+            if (_mongoClient is not null)
+            {
+                await _mongoClient.DropDatabaseAsync(_testDbName);
+            }
+
+            await _mongoContainer.DisposeAsync();
         }
 
         public async Task UsingRepository<TRepository>(Func<TRepository, Task> handlerAction)
         {
             ArgumentNullException.ThrowIfNull(handlerAction);
 
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = _serviceProvider!.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<TRepository>();
 
             if (handler == null)
@@ -79,14 +98,14 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
         {
             ArgumentNullException.ThrowIfNull(scopedAction);
 
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = _serviceProvider!.CreateScope();
 
             await scopedAction.Invoke(scope.ServiceProvider);
         }
 
         public void Dispose()
         {
-            _serviceProvider.Dispose();
+            _serviceProvider?.Dispose();
         }
 
         private static void ConfigureServices(IServiceCollection services)

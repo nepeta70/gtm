@@ -17,6 +17,8 @@
 
     <ItemGroup>
         <PackageReference Include="Acheve.TestHost" />
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+        <PackageReference Include="Testcontainers.MongoDb" />
     </ItemGroup>
 
     <ItemGroup>
