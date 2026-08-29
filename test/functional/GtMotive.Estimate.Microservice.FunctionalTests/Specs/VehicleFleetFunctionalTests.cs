@@ -9,7 +9,7 @@ using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Mode
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
-using GtMotive.Estimate.Microservice.Domain;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

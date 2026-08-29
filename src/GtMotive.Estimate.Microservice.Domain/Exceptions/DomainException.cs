@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 [assembly: CLSCompliant(false)]
 
-namespace GtMotive.Estimate.Microservice.Domain
+namespace GtMotive.Estimate.Microservice.Domain.Exceptions
 {
     /// <summary>
     /// Domain Exception.

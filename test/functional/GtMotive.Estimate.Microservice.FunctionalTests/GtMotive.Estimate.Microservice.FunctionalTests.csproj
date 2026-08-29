@@ -23,7 +23,6 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <PackageReference Include="Microsoft.Data.SqlClient" />
-        <PackageReference Include="Respawn" />
         <PackageReference Include="Testcontainers.MongoDb" />
     </ItemGroup>
 

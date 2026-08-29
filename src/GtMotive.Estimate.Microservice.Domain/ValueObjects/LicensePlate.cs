@@ -1,4 +1,6 @@
-﻿namespace GtMotive.Estimate.Microservice.Domain.ValueObjects
+﻿using GtMotive.Estimate.Microservice.Domain.Exceptions;
+
+namespace GtMotive.Estimate.Microservice.Domain.ValueObjects
 {
     /// <summary>
     /// Represents a vehicle license plate. Immutable by design.
