@@ -140,5 +140,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapVehicles();
+app.MapHealth();
 
 await app.RunAsync();
