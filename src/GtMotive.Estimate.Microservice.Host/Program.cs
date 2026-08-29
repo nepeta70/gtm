@@ -139,7 +139,6 @@ app.UseStatusCodePages();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 app.MapVehicles();
 
 await app.RunAsync();
