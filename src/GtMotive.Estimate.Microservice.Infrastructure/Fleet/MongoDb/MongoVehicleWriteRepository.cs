@@ -3,20 +3,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using GtMotive.Estimate.Microservice.Domain.Entities;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using MongoDB.Driver;
 
 namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
 {
-    public sealed class MongoVehicleRepository : IVehicleWriteRepository
+    public sealed class MongoVehicleWriteRepository : IVehicleWriteRepository
     {
         private const string CollectionName = "vehicles";
 
         private readonly IMongoCollection<VehicleDocument> _collection;
         private readonly IMapper _mapper;
-        private readonly IAppLogger<MongoVehicleRepository> _logger;
+        private readonly IAppLogger<MongoVehicleWriteRepository> _logger;
 
-        public MongoVehicleRepository(IMongoDatabase database, IMapper mapper, IAppLogger<MongoVehicleRepository> logger)
+        public MongoVehicleWriteRepository(IMongoDatabase database, IMapper mapper, IAppLogger<MongoVehicleWriteRepository> logger)
         {
             ArgumentNullException.ThrowIfNull(database);
             ArgumentNullException.ThrowIfNull(mapper);
@@ -32,11 +33,19 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
             ArgumentNullException.ThrowIfNull(vehicle);
 
             _logger.LogInformation("Adding new vehicle with ID {VehicleId}", vehicle.Id);
-
             var document = _mapper.Map<VehicleDocument>(vehicle);
-            await _collection
-                .InsertOneAsync(document, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
+
+            try
+            {
+                await _collection
+                    .InsertOneAsync(document, cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
+            {
+                _logger.LogError(ex, "A vehicle with license plate '{LicensePlate}' already exists.", vehicle.LicensePlate);
+                throw new ConflictException($"A vehicle with license plate '{vehicle.LicensePlate}' already exists.", ex);
+            }
 
             _logger.LogInformation("Successfully added vehicle with ID {VehicleId}", vehicle.Id);
         }
