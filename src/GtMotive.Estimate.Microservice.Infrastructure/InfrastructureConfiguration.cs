@@ -48,12 +48,25 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
             services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
             services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
 
+            // Authorization: prefer JWT-based policy checks when a Jwt secret is configured (works on Docker)
+            var jwtSecret = System.Environment.GetEnvironmentVariable("Jwt__Secret") ?? System.Environment.GetEnvironmentVariable("Jwt:Secret");
+            var useJwtAuth = !string.IsNullOrEmpty(jwtSecret);
+
             if (!isDevelopment)
             {
                 services.AddScoped<ITelemetry, AppTelemetry>();
                 services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
                 services.AddScoped<IBus, NoOpBus>();
-                services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+
+                if (useJwtAuth)
+                {
+                    // JwtAuthorizationService evaluates policies against an authenticated ClaimsPrincipal.
+                    services.AddScoped<IAuthorizationService, JwtAuthorizationService>();
+                }
+                else
+                {
+                    services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+                }
             }
             else
             {
