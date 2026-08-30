@@ -10,6 +10,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - MongoDb__ConnectionString=mongodb://mongo:27017/gtmotive-estimate
       - MongoDb__MongoDbDatabaseName=gtmotive-estimate
+      - Bus__Provider=InMemory
     depends_on:
       - mongo
     networks:

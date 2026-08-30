@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus;
+using GtMotive.Estimate.Microservice.Infrastructure.Bus.Settings;
 using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Logging;
@@ -48,16 +49,28 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
             services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
             services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
 
+            // Bus configuration: provider is selected from BusSettings.
+            services.AddOptions<BusSettings>();
+            services.AddScoped<IBusFactory, BusFactory>();
+            services.AddScoped<IBus>(sp => sp.GetRequiredService<IBusFactory>().GetClient(typeof(object)));
+            services.AddScoped<NoOpBus>();
+            services.AddScoped<InMemoryBus>();
+            services.AddScoped<AzureServiceBus>(sp =>
+            {
+                var settings = sp.GetRequiredService<IOptions<BusSettings>>().Value;
+                var logger = sp.GetRequiredService<IAppLogger<AzureServiceBus>>();
+
+                return new AzureServiceBus(settings.ConnectionString, settings.DefaultQueueOrTopicName, logger);
+            });
+
             if (!isDevelopment)
             {
                 services.AddScoped<ITelemetry, AppTelemetry>();
                 services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
-                services.AddScoped<IBus, NoOpBus>();
                 services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
             }
             else
             {
-                services.AddScoped<IBus, NoOpBus>();
                 services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
                 services.AddScoped<ITelemetry, NoOpTelemetry>();
                 services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
