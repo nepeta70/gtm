@@ -69,6 +69,9 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 builder.Services.AddControllers(ApiConfiguration.ConfigureControllers)
     .WithApiControllers();
 
+// Configure authentication via Host extension to keep Program minimal and consistent with repo patterns
+builder.Services.AddHostAuthentication(builder.Configuration, builder.Environment, appSettings);
+
 builder.Services.AddBaseInfrastructure(builder.Environment.IsDevelopment());
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -86,7 +89,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 // Configure authentication: prefer a simple JWT bearer setup when a symmetric secret is provided
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? System.Environment.GetEnvironmentVariable("Jwt__Secret");
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? Environment.GetEnvironmentVariable("Jwt__Secret");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 var validateIssuer = !string.IsNullOrEmpty(jwtIssuer);
