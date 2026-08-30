@@ -1,4 +1,5 @@
 ﻿using System;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.ValueObjects;
 
 namespace GtMotive.Estimate.Microservice.Domain.Entities

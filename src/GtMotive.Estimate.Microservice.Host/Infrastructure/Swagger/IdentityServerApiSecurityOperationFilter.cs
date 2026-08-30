@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace GtMotive.Estimate.Microservice.Host.Infrastructure.Swagger
@@ -13,7 +13,6 @@ namespace GtMotive.Estimate.Microservice.Host.Infrastructure.Swagger
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             ArgumentNullException.ThrowIfNull(operation);
-
             ArgumentNullException.ThrowIfNull(context);
 
             var controllerAttributes = context.MethodInfo.DeclaringType is null
@@ -40,18 +39,10 @@ namespace GtMotive.Estimate.Microservice.Host.Infrastructure.Swagger
                     new OpenApiSecurityRequirement
                     {
                         {
-                            new OpenApiSecurityScheme
-                            {
-                                Reference = new OpenApiReference
-                                {
-                                    Type = ReferenceType.SecurityScheme,
-                                    Id = "oauth2"
-                                }
-                            },
-                            OpenApiSecuritySchemesValues
+                            new OpenApiSecuritySchemeReference("oauth2"),
+                            OpenApiSecuritySchemesValues.ToList()
                         }
                     }
-
                 ];
             }
         }

@@ -46,7 +46,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
                 return database;
             });
             services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
-            services.AddScoped<IVehicleWriteRepository, MongoVehicleRepository>();
+            services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
 
             if (!isDevelopment)
             {

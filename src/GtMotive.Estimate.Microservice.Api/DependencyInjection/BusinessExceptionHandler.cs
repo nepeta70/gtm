@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using GtMotive.Estimate.Microservice.Domain;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
@@ -24,41 +24,61 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
 
             appLogger.LogError(exception, "Exception captured in DomainExceptionHandler.");
 
-            if (exception is DomainException domainException)
+            switch (exception)
             {
-                var problemDetails = new ProblemDetails
-                {
-                    Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "Bad Request",
-                    Detail = domainException.Message,
-                    Instance = httpContext.Request.Path,
-                };
+                case DomainException domainException:
+                    {
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                            Status = StatusCodes.Status400BadRequest,
+                            Title = "Bad Request",
+                            Detail = domainException.Message,
+                            Instance = httpContext.Request.Path,
+                        };
 
-                appLogger.LogWarning("Domain Exception: {status} - {detail}", problemDetails.Status, problemDetails.Detail);
+                        appLogger.LogWarning("Domain Exception: {status} - {detail}", problemDetails.Status, problemDetails.Detail);
 
-                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+                        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
-                return true;
-            }
-            else
-            {
-                var problemDetails = new ProblemDetails
-                {
-                    Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-                    Status = StatusCodes.Status500InternalServerError,
-                    Title = "Internal Server Error",
-                    Detail = exception.Message,
-                    Instance = httpContext.Request.Path,
-                };
+                        return true;
+                    }
 
-                appLogger.LogError(exception, "Unhandled Exception");
+                case ConflictException conflictException:
+                    {
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                            Status = StatusCodes.Status409Conflict,
+                            Title = "Conflict",
+                            Detail = conflictException.Message,
+                            Instance = httpContext.Request.Path,
+                        };
 
-                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+                        httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+                        return true;
+                    }
 
-                return true;
+                default:
+                    {
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+                            Status = StatusCodes.Status500InternalServerError,
+                            Title = "Internal Server Error",
+                            Detail = exception.Message,
+                            Instance = httpContext.Request.Path,
+                        };
+
+                        appLogger.LogError(exception, "Unhandled Exception");
+
+                        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+
+                        return true;
+                    }
             }
         }
     }

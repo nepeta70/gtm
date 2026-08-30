@@ -9,7 +9,7 @@ using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Mode
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
-using GtMotive.Estimate.Microservice.Domain;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,8 +18,7 @@ using Xunit;
 
 namespace GtMotive.Estimate.Microservice.FunctionalTests.Specs
 {
-    // Exercises the whole stack (use cases + real Api presenters + in-memory infrastructure)
-    // wired exactly as it is in production, but without starting the Host / HTTP pipeline.
+    [Collection(TestCollections.Functional)]
     public sealed class VehicleFleetFunctionalTests(CompositionRootTestFixture fixture) : FunctionalTestBase(fixture)
     {
         [Fact]

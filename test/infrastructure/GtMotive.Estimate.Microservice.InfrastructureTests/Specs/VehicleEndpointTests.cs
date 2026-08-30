@@ -13,6 +13,7 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Specs
     /// (TestServer), routing, model binding and endpoint exception handling,
     /// without needing a running network host.
     /// </summary>
+    [Collection(TestCollections.TestServer)]
     public sealed class VehicleEndpointTests(GenericInfrastructureTestServerFixture fixture)
         : InfrastructureTestBase(fixture)
     {

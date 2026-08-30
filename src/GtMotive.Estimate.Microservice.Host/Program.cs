@@ -76,16 +76,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     // Only loopback proxies are allowed by default.
     // Clear that restriction because forwarders are enabled by explicit
     // configuration.
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
-    })
+{
+    options.DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
+})
     .AddIdentityServerAuthentication(options =>
     {
         options.Authority = appSettings.JwtAuthority;
@@ -103,7 +103,6 @@ Log.Logger = builder.Environment.IsDevelopment() ?
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
         .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-        .MinimumLevel.Override("System", LogEventLevel.Warning)
         .WriteTo.Console(
             outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}",
             theme: AnsiConsoleTheme.Literate,

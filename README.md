@@ -137,15 +137,35 @@ The container listens on port **8080** (`ASPNETCORE_URLS=http://+:8080`).
 
 | Type | Project | What it covers | Status |
 |------|---------|----------------|--------|
-| **Unit** | `test/unit` | Domain rules (`VehicleTests`), all four use cases with mocked repos | **24 tests passing** |
-| **Functional** | `test/functional` | Full stack (use cases + presenters + Mongo repos) without HTTP | Written, **not discovered** (test classes are `internal`) |
-| **Infrastructure** | `test/infrastructure` | `POST /api/vehicles` through TestServer | Written, **not discovered** (test classes are `internal`; test `Startup` does not map vehicle endpoints) |
+| **Unit** | `test/unit` | Domain rules, presenters and use-cases with mocked dependencies | Implemented and passing locally (presenters + use-cases + domain tests) |
+| **Functional** | `test/functional` | Full stack (use cases + presenters + Mongo repos) without HTTP; repository integration tests use Testcontainers and share a container per test collection | Implemented and running (uses shared Testcontainers MongoDB fixture) |
+| **Infrastructure** | `test/infrastructure` | End-to-end host-level tests through TestServer (POST /api/vehicles, rent, return, conflict / bad request scenarios) | Implemented and running (TestServer + Testcontainers) |
 
-### Running unit tests
+### Running tests
+
+Unit tests:
 
 ```bash
 dotnet test test/unit/GtMotive.Estimate.Microservice.UnitTests
 ```
+
+Functional (integration) tests:
+
+```bash
+dotnet test test/functional/GtMotive.Estimate.Microservice.FunctionalTests
+```
+
+Infrastructure (host) tests:
+
+```bash
+dotnet test test/infrastructure/GtMotive.Estimate.Microservice.InfrastructureTests
+```
+
+Notes:
+
+- Functional and infrastructure tests use Testcontainers.MongoDb and are organized to reuse a single container per test collection to reduce startup cost.
+- Tests follow the repository's existing coding conventions and the project's .editorconfig.
+
 
 ## Use cases
 

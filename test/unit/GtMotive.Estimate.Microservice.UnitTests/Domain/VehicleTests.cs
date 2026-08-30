@@ -1,7 +1,7 @@
 ﻿using System;
 using FluentAssertions;
-using GtMotive.Estimate.Microservice.Domain;
 using GtMotive.Estimate.Microservice.Domain.Entities;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using Xunit;
 
 namespace GtMotive.Estimate.Microservice.UnitTests.Domain
