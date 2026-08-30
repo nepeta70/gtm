@@ -22,6 +22,7 @@
              Reference it explicitly so the centrally managed version wins over the transitive one. -->
         <PackageReference Include="Acheve.TestHost" />
         <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" />
         <PackageReference Include="Testcontainers.MongoDb" />
     </ItemGroup>
 

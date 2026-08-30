@@ -9,11 +9,14 @@
     <ItemGroup>
         <PackageReference Include="AutoMapper" />
         <PackageReference Include="Microsoft.ApplicationInsights" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" />
         <PackageReference Include="MongoDB.Bson" />
         <PackageReference Include="MongoDB.Driver" />
         <PackageReference Include="Polly" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     </ItemGroup>
 
     <ItemGroup>

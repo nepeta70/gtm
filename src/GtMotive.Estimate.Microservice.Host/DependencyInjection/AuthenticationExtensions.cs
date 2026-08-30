@@ -1,74 +1,47 @@
-using GtMotive.Estimate.Microservice.Domain.Interfaces;
+using GtMotive.Estimate.Microservice.Host.Configuration;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using IdentityServer4.AccessTokenValidation;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
 {
+    /// <summary>
+    /// Wires up authentication for the Host. Prefers a Docker/dev-friendly symmetric JWT
+    /// (see <see cref="JwtBearerAuthenticationExtensions"/>) when a Jwt:Secret is configured,
+    /// falling back to IdentityServer in environments where no secret is available.
+    /// </summary>
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal static class AuthenticationExtensions
     {
-        internal static IServiceCollection AddHostAuthentication(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment, object appSettings)
+        internal static IServiceCollection AddHostAuthentication(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment, AppSettings appSettings)
         {
-            // Parameters referenced to satisfy style analyzers; appSettings is intentionally unused here.
-            _ = appSettings;
-
-            // If Jwt secret provided, prefer simple HS256 JWT for Docker/dev scenarios
-            var jwtSecret = configuration["Jwt:Secret"] ?? configuration["Jwt__Secret"];
-            if (!string.IsNullOrWhiteSpace(jwtSecret))
+            if (services.TryAddJwtBearerAuthentication(configuration, requireHttpsMetadata: !environment.IsDevelopment()))
             {
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+                return services;
+            }
+
+            if (!environment.IsDevelopment())
+            {
                 services.AddAuthentication(options =>
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
                 })
-                .AddJwtBearer(options =>
+                .AddIdentityServerAuthentication(options =>
                 {
-                    options.RequireHttpsMetadata = !environment.IsDevelopment();
-                    options.SaveToken = true;
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = key,
-                        ValidateIssuer = !string.IsNullOrWhiteSpace(configuration["Jwt:Issuer"]),
-                        ValidateAudience = !string.IsNullOrWhiteSpace(configuration["Jwt:Audience"]),
-                        ValidIssuer = configuration["Jwt:Issuer"],
-                        ValidAudience = configuration["Jwt:Audience"]
-                    };
+                    options.Authority = appSettings?.JwtAuthority;
+                    options.ApiName = "estimate-api";
+                    options.SupportedTokens = SupportedTokens.Jwt;
                 });
 
-                // Use JwtAuthorizationService from Infrastructure
-                services.AddSingleton<IAuthorizationService, JwtAuthorizationService>();
                 return services;
             }
 
-            // Fallback to IdentityServer (existing behavior)
-            // IdentityServer types are referenced by the Host project; preserve prior behavior.
-            if (!string.IsNullOrWhiteSpace(configuration["IdentityServer:Authority"]))
-            {
-                services.AddAuthentication("Bearer")
-                    .AddJwtBearer("Bearer", options =>
-                    {
-                        options.Authority = configuration["IdentityServer:Authority"];
-                        options.RequireHttpsMetadata = !environment.IsDevelopment();
-                        options.TokenValidationParameters = new TokenValidationParameters
-                        {
-                            ValidateAudience = true,
-                            ValidAudience = configuration["Jwt:Audience"] ?? "estimate-api",
-                        };
-                    });
-
-                services.AddSingleton<IAuthorizationService, JwtAuthorizationService>();
-                return services;
-            }
-
-            // No-op: register default authorization service
-            services.AddSingleton<IAuthorizationService, JwtAuthorizationService>();
+            // Development/Test without a Jwt secret: leave authentication to callers
+            // (tests use TestServerDefaults scheme; no protected endpoints require a real scheme locally).
+            services.AddAuthentication();
             return services;
         }
     }

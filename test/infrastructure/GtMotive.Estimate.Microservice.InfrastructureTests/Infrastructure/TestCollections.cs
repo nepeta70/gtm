@@ -3,5 +3,7 @@
     internal static class TestCollections
     {
         public const string TestServer = "TestServer";
+
+        public const string JwtTestServer = "JwtTestServer";
     }
 }
