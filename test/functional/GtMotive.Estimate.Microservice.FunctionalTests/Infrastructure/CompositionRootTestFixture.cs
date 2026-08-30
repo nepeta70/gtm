@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Api;
 using GtMotive.Estimate.Microservice.Infrastructure;
 using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
+using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
@@ -28,7 +28,9 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
         public CompositionRootTestFixture()
         {
             _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
-            _mongoContainer = new MongoDbBuilder().Build();
+
+            // FIX: Pass the image name to the constructor to avoid the obsolete warning
+            _mongoContainer = new MongoDbBuilder("mongo:7.0").Build();
         }
 
         public IConfiguration Configuration { get; private set; }
@@ -55,6 +57,7 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             services.AddSingleton<IConfiguration>(configuration);
             services.Configure<MongoDbSettings>(Configuration.GetSection("MongoDb"));
 
+            // Replace default IMongoDatabase registration if it exists
             var dbDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IMongoDatabase));
             if (dbDescriptor is not null)
             {
@@ -65,14 +68,61 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             {
                 var database = sp.GetRequiredService<IMongoClient>().GetDatabase(_testDbName);
                 VehicleCollectionSetup.EnsureIndexes(database);
-
                 return database;
             });
 
             _serviceProvider = services.BuildServiceProvider();
             _mongoClient = _serviceProvider.GetRequiredService<IMongoClient>();
 
+            // Ensure a clean state before tests run
             await _mongoClient.DropDatabaseAsync(_testDbName);
+        }
+
+        public async Task UsingHandlerForRequest<TRequest>(Func<IRequestHandler<TRequest, Unit>, Task> handlerAction)
+            where TRequest : IRequest<Unit>
+        {
+            ArgumentNullException.ThrowIfNull(handlerAction);
+
+            using var scope = _serviceProvider.CreateScope();
+            var handler = scope.ServiceProvider.GetRequiredService<IRequestHandler<TRequest, Unit>>();
+
+            await handlerAction(handler);
+        }
+
+        public async Task UsingHandlerForRequestResponse<TRequest, TResponse>(Func<IRequestHandler<TRequest, TResponse>, Task> handlerAction)
+            where TRequest : IRequest<TResponse>
+        {
+            ArgumentNullException.ThrowIfNull(handlerAction);
+
+            using var scope = _serviceProvider.CreateScope();
+            var handler = scope.ServiceProvider.GetRequiredService<IRequestHandler<TRequest, TResponse>>();
+
+            await handlerAction(handler);
+        }
+
+        public async Task UsingRepository<TRepository>(Func<TRepository, Task> handlerAction)
+        {
+            ArgumentNullException.ThrowIfNull(handlerAction);
+
+            using var scope = _serviceProvider.CreateScope();
+            var handler = scope.ServiceProvider.GetRequiredService<TRepository>();
+
+            await handlerAction(handler);
+        }
+
+        public async Task UsingScope(Func<IServiceProvider, Task> scopedAction)
+        {
+            ArgumentNullException.ThrowIfNull(scopedAction);
+
+            using var scope = _serviceProvider.CreateScope();
+
+            await scopedAction(scope.ServiceProvider);
+        }
+
+        public void Dispose()
+        {
+            _serviceProvider?.Dispose();
+            _mongoClient?.Dispose();
         }
 
         public async Task DisposeAsync()
@@ -82,36 +132,12 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
                 await _mongoClient.DropDatabaseAsync(_testDbName);
             }
 
-            await _mongoContainer.DisposeAsync();
-        }
-
-        public async Task UsingRepository<TRepository>(Func<TRepository, Task> handlerAction)
-        {
-            ArgumentNullException.ThrowIfNull(handlerAction);
-
-            using var scope = _serviceProvider!.CreateScope();
-            var handler = scope.ServiceProvider.GetRequiredService<TRepository>();
-
-            if (handler == null)
+            if (_serviceProvider is not null)
             {
-                Debug.Fail("The requested handler has not been registered");
+                await _serviceProvider.DisposeAsync();
             }
 
-            await handlerAction.Invoke(handler);
-        }
-
-        public async Task UsingScope(Func<IServiceProvider, Task> scopedAction)
-        {
-            ArgumentNullException.ThrowIfNull(scopedAction);
-
-            using var scope = _serviceProvider!.CreateScope();
-
-            await scopedAction.Invoke(scope.ServiceProvider);
-        }
-
-        public void Dispose()
-        {
-            _serviceProvider?.Dispose();
+            await _mongoContainer.DisposeAsync();
         }
 
         private static void ConfigureServices(IServiceCollection services)

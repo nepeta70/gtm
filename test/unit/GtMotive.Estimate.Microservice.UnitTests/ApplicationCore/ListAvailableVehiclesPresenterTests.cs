@@ -36,7 +36,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore
         {
             var presenter = new ListAvailableVehiclesPresenter();
 
-            Action act = () => presenter.StandardHandle(null!);
+            Action act = () => presenter.StandardHandle(null);
 
             act.Should().Throw<ArgumentNullException>();
         }
