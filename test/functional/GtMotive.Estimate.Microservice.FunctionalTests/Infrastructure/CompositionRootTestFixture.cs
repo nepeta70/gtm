@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Api;
 using GtMotive.Estimate.Microservice.Infrastructure;
+using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,7 +62,12 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             }
 
             services.AddSingleton(sp =>
-                sp.GetRequiredService<IMongoClient>().GetDatabase(_testDbName));
+            {
+                var database = sp.GetRequiredService<IMongoClient>().GetDatabase(_testDbName);
+                VehicleCollectionSetup.EnsureIndexes(database);
+
+                return database;
+            });
 
             _serviceProvider = services.BuildServiceProvider();
             _mongoClient = _serviceProvider.GetRequiredService<IMongoClient>();

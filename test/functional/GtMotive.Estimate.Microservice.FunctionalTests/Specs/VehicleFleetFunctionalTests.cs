@@ -18,8 +18,6 @@ using Xunit;
 
 namespace GtMotive.Estimate.Microservice.FunctionalTests.Specs
 {
-    // Exercises the whole stack (use cases + real Api presenters + in-memory infrastructure)
-    // wired exactly as it is in production, but without starting the Host / HTTP pipeline.
     [Collection(TestCollections.Functional)]
     public sealed class VehicleFleetFunctionalTests(CompositionRootTestFixture fixture) : FunctionalTestBase(fixture)
     {
