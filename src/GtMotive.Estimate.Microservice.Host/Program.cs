@@ -1,3 +1,5 @@
+﻿using System;
+using System.Globalization;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
@@ -8,23 +10,16 @@ using GtMotive.Estimate.Microservice.Host.DependencyInjection;
 using GtMotive.Estimate.Microservice.Infrastructure;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus.Settings;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
-using IdentityServer4.AccessTokenValidation;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
-using System;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder();
 
@@ -87,65 +82,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
-
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
-// Configure authentication: prefer a simple JWT bearer setup when a symmetric secret is provided
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? Environment.GetEnvironmentVariable("Jwt__Secret");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtAudience = builder.Configuration["Jwt:Audience"];
-var validateIssuer = !string.IsNullOrEmpty(jwtIssuer);
-var validateAudience = !string.IsNullOrEmpty(jwtAudience);
-
-if (!string.IsNullOrEmpty(jwtSecret))
-{
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        var tvp = new TokenValidationParameters
-        {
-            ValidateIssuer = validateIssuer,
-            ValidateAudience = validateAudience,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateLifetime = true
-        };
-
-        if (validateIssuer)
-        {
-            tvp.ValidIssuer = jwtIssuer;
-        }
-
-        if (validateAudience)
-        {
-            tvp.ValidAudience = jwtAudience;
-        }
-
-        options.TokenValidationParameters = tvp;
-    });
-}
-else if (!builder.Environment.IsDevelopment())
-{
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
-    })
-    .AddIdentityServerAuthentication(options =>
-    {
-        options.Authority = appSettings.JwtAuthority;
-        options.ApiName = "estimate-api";
-        options.SupportedTokens = SupportedTokens.Jwt;
-    });
-}
-else
-{
-    // Development/Test: leave authentication to callers (tests use TestServerDefaults scheme)
-    builder.Services.AddAuthentication();
-}
 
 builder.Services.AddSwagger(appSettings, builder.Configuration);
 

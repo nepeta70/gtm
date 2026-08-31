@@ -88,7 +88,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
             {
                 services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
                 services.AddScoped<ITelemetry, NoOpTelemetry>();
-                services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
+                services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
             }
             else
             {
