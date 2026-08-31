@@ -31,7 +31,6 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
         {
             _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
 
-            // FIX: Pass the image name to the constructor to avoid the obsolete warning
             _mongoContainer = new MongoDbBuilder("mongo:7.0").Build();
         }
 

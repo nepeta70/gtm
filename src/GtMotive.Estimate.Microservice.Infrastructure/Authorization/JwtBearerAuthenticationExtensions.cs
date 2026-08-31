@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -29,6 +30,8 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Authorization
         {
             ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(configuration);
+
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
             var jwtSecret = configuration["Jwt:Secret"] ?? configuration["Jwt__Secret"];
             if (string.IsNullOrWhiteSpace(jwtSecret))
