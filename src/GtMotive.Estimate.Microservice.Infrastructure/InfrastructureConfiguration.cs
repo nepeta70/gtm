@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
@@ -27,9 +27,22 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
         {
             ArgumentNullException.ThrowIfNull(services);
 
+            AddCoreServices(services);
+            AddMongoDb(services);
+            AddBuses(services);
+            AddEnvironmentSpecificServices(services, isDevelopment);
+
+            return new InfrastructureBuilder(services);
+        }
+
+        private static void AddCoreServices(IServiceCollection services)
+        {
             services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
             services.AddAutoMapper(cfg => cfg.AddProfile<VehicleMappingProfile>());
+        }
 
+        private static void AddMongoDb(IServiceCollection services)
+        {
             services.AddSingleton<IMongoClient>(sp =>
             {
                 var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
@@ -46,37 +59,51 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
 
                 return database;
             });
+
             services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
             services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
+        }
 
-            // Bus configuration: provider is selected from BusSettings.
+        private static void AddBuses(IServiceCollection services)
+        {
             services.AddOptions<BusSettings>();
             services.AddScoped<IBusFactory, BusFactory>();
-            services.AddScoped<IBus>(sp => sp.GetRequiredService<IBusFactory>().GetClient(typeof(object)));
-            services.AddScoped<NoOpBus>();
-            services.AddScoped<InMemoryBus>();
-            services.AddScoped<AzureServiceBus>(sp =>
+
+            services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
+            services.AddKeyedScoped<IBus>(BusNames.Azure, (sp, key) =>
             {
                 var settings = sp.GetRequiredService<IOptions<BusSettings>>().Value;
                 var logger = sp.GetRequiredService<IAppLogger<AzureServiceBus>>();
 
                 return new AzureServiceBus(settings.ConnectionString, settings.DefaultQueueOrTopicName, logger);
             });
+        }
 
-            if (!isDevelopment)
-            {
-                services.AddScoped<ITelemetry, AppTelemetry>();
-                services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
-                services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
-            }
-            else
+        private static void AddEnvironmentSpecificServices(IServiceCollection services, bool isDevelopment)
+        {
+            var jwtSecret = Environment.GetEnvironmentVariable("Jwt__Secret") ?? Environment.GetEnvironmentVariable("Jwt:Secret");
+            var useJwtAuth = !string.IsNullOrEmpty(jwtSecret);
+
+            if (isDevelopment)
             {
                 services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
                 services.AddScoped<ITelemetry, NoOpTelemetry>();
                 services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
             }
+            else
+            {
+                if (useJwtAuth)
+                {
+                    services.AddScoped<IAuthorizationService, JwtAuthorizationService>();
+                }
+                else
+                {
+                    services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+                }
 
-            return new InfrastructureBuilder(services);
+                services.AddScoped<ITelemetry, AppTelemetry>();
+                services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+            }
         }
 
         private sealed class InfrastructureBuilder(IServiceCollection services) : IInfrastructureBuilder

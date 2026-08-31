@@ -11,6 +11,14 @@ services:
       - MongoDb__ConnectionString=mongodb://mongo:27017/gtmotive-estimate
       - MongoDb__MongoDbDatabaseName=gtmotive-estimate
       - Bus__Provider=InMemory
+      # JWT bearer authentication (optional, dev-friendly HS256 auth).
+      # Leave these commented out to run without authentication in Development.
+      # Uncomment and set a real secret to exercise JWT-protected endpoints locally.
+      # See docs/authentication.md for details and how to mint a token with the
+      # GtMotive.Estimate.Microservice.DevTokenGenerator CLI tool.
+      # - Jwt__Secret=replace-with-a-long-random-development-secret
+      # - Jwt__Issuer=gtmotive-estimate-api
+      # - Jwt__Audience=gtmotive-estimate-clients
     depends_on:
       - mongo
     networks:

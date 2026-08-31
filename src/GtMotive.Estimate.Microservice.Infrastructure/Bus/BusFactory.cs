@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus.Settings;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,9 +38,9 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Bus
 
             return provider switch
             {
-                "INMEMORY" => _serviceProvider.GetRequiredService<InMemoryBus>(),
-                "AZURESERVICEBUS" or "AZURE" => _serviceProvider.GetRequiredService<AzureServiceBus>(),
-                _ => _serviceProvider.GetRequiredService<NoOpBus>()
+                BusNames.InMemory => _serviceProvider.GetRequiredKeyedService<IBus>(BusNames.InMemory),
+                BusNames.Azure => _serviceProvider.GetRequiredKeyedService<IBus>(BusNames.Azure),
+                _ => _serviceProvider.GetRequiredKeyedService<IBus>(BusNames.NoOp)
             };
         }
     }

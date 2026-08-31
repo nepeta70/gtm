@@ -10,6 +10,8 @@
     <ItemGroup>
         <!-- Asp.Net Core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+        <PackageReference Update="Microsoft.IdentityModel.Tokens" Version="8.19.2" />
+        <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />
         <PackageReference Update="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.0" />
         <PackageReference Update="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.0" />
         <PackageReference Update="AspNetCore.HealthChecks.Redis" Version="9.0.0" />

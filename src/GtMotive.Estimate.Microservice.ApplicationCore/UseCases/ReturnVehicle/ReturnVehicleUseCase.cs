@@ -17,14 +17,14 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
     /// <param name="outputPort">The output port handler for returning the response.</param>
     /// <param name="logger">The application logging abstraction.</param>
     /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
-    /// <param name="bus">The message bus abstraction for domain event publishing.</param>
+    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
     public sealed class ReturnVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         IReturnVehicleOutputPort outputPort,
         IAppLogger<ReturnVehicleUseCase> logger,
         ITelemetry telemetry,
-        IBus bus) : IUseCase<ReturnVehicleInput>
+        IBusFactory busFactory) : IUseCase<ReturnVehicleInput>
     {
         /// <summary>
         /// Executes the process of returning a vehicle.
@@ -65,7 +65,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
 
             telemetry.TrackMetric(nameof(VehicleReturnedEvent), 1);
 
-            await bus.Send(vehicleReturnedEvent).ConfigureAwait(false);
+            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent).ConfigureAwait(false);
 
             logger.LogInformation("Vehicle {VehicleId} successfully returned", vehicle.Id);
 

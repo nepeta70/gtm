@@ -20,7 +20,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
     /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
-    /// <param name="bus">The message bus abstraction for domain event publishing.</param>
+    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
     public sealed class RentVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IVehicleReadRepository vehicleReadRepository,
@@ -28,7 +28,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
         IRentVehicleOutputPort outputPort,
         IAppLogger<RentVehicleUseCase> logger,
         ITelemetry telemetry,
-        IBus bus) : IUseCase<RentVehicleInput>
+        IBusFactory busFactory) : IUseCase<RentVehicleInput>
     {
         /// <summary>
         /// Executes the process of renting a vehicle to a customer.
@@ -79,7 +79,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
 
             telemetry.TrackMetric(nameof(VehicleRentedEvent), 1);
 
-            await bus.Send(vehicleRentedEvent).ConfigureAwait(false);
+            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent).ConfigureAwait(false);
 
             logger.LogInformation("Vehicle {VehicleId} successfully rented to {RenterId}", vehicle.Id, vehicle.RenterId);
 

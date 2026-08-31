@@ -2,7 +2,9 @@
 using Acheve.TestHost;
 using GtMotive.Estimate.Microservice.Api;
 using GtMotive.Estimate.Microservice.Api.Endpoints;
+using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure;
+using GtMotive.Estimate.Microservice.Infrastructure.Bus;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -40,6 +42,7 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             services.AddControllers(ApiConfiguration.ConfigureControllers)
                 .WithApiControllers();
             services.AddBaseInfrastructure(true);
+            services.AddKeyedScoped<IBus, NoOpBus>(BusNames.NoOp);
         }
     }
 }
