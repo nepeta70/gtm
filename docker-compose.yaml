@@ -46,10 +46,11 @@ services:
     container_name: servicebus-emulator
     environment:
       SQL_SERVER: sqledge
-      MSSQL_SA_PASSWORD: "YourStrong@Passw0rd"
+      MSSQL_SA_PASSWORD: "YourStrongPassw0rd123"
       ACCEPT_EULA: "Y"
     depends_on:
-      - sqledge
+      sqledge:
+        condition: service_healthy
     ports:
       - "5672:5672"
     networks:
@@ -59,15 +60,20 @@ services:
         target: /ServiceBus_Emulator/ConfigFiles/Config.json
 
   sqledge:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/azure-sql-edge:latest
     container_name: sqledge
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "YourStrong@Passw0rd"
+      MSSQL_SA_PASSWORD: "YourStrongPassw0rd123"
     ports:
       - "1433:1433"
     networks:
       - gtmotive-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassw0rd123", "-Q", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   mongo-data:
@@ -84,7 +90,7 @@ configs:
         "UserConfig": {
           "Namespaces": [
             {
-              "Name": "localhost",
+              "Name": "sbemulatorns",
               "Queues": [
                 { "Name": "gtmotive-events", "Properties": {} }
               ],
