@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 
@@ -58,7 +58,6 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Authorization
                 return Task.FromResult(false);
             }
 
-            // Unknown policy - be conservative and deny.
             return Task.FromResult(false);
         }
     }
