@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting; // Required for HostBuilder and IHost
+using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using Testcontainers.MongoDb;
 using Xunit;
@@ -46,7 +46,10 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
                     builder.AddInMemoryCollection(new Dictionary<string, string>
                     {
                         ["MongoDb:ConnectionString"] = _mongoContainer.GetConnectionString(),
-                        ["MongoDb:MongoDbDatabaseName"] = _testDbName
+                        ["MongoDb:MongoDbDatabaseName"] = _testDbName,
+                        ["Jwt:Secret"] = JwtTestServerFixture.Secret,
+                        ["Jwt:Issuer"] = JwtTestServerFixture.Issuer,
+                        ["Jwt:Audience"] = JwtTestServerFixture.Audience
                     });
                 })
                 .ConfigureWebHost(webHostBuilder =>

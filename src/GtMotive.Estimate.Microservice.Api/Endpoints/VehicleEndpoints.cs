@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using GtMotive.Estimate.Microservice.Api.Authorization;
+using GtMotive.Estimate.Microservice.Api.Resilience;
 using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ListAvailableVehicles;
 using GtMotive.Estimate.Microservice.Api.UseCases.RentVehicle;
@@ -22,7 +24,8 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
         {
             var group = app.MapGroup("api/vehicles")
                            .WithTags("Vehicles")
-                           .AllowAnonymous();
+                           .RequireAuthorization()
+                           .RequireRateLimiting(ApiResiliencePolicyNames.EndpointConcurrency);
 
             group.MapPost(string.Empty, async (
                 CreateVehicleRequest request,
@@ -40,6 +43,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
                 return presenter.Result;
             })
+            .RequireAuthorization(AuthorizationPolicies.CanCreateVehicle)
             .WithName("CreateVehicle")
             .WithSummary("Registers a new vehicle in the fleet")
             .Produces<Guid>(StatusCodes.Status201Created)
@@ -71,6 +75,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
                 return presenter.Result;
             })
+            .RequireAuthorization(AuthorizationPolicies.CanRentVehicle)
             .WithName("RentVehicle")
             .WithSummary("Rents an available vehicle")
             .Produces(StatusCodes.Status200OK)
@@ -89,6 +94,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
                 return presenter.Result;
             })
+            .RequireAuthorization(AuthorizationPolicies.CanRentVehicle)
             .WithName("ReturnVehicle")
             .WithSummary("Returns a previously rented vehicle")
             .Produces(StatusCodes.Status200OK)

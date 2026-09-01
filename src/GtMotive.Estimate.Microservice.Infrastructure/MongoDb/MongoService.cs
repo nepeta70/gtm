@@ -6,6 +6,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.MongoDb
 {
     public class MongoService(IOptions<MongoDbSettings> options)
     {
+        // Add call to RegisterBsonClasses() method.
         public MongoClient MongoClient { get; } = new MongoClient(options.Value.ConnectionString);
     }
 }

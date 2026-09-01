@@ -133,6 +133,54 @@ The Host project references `docker-compose.dcproj`, allowing Docker Compose to 
 
 The container listens on port **8080** (`ASPNETCORE_URLS=http://+:8080`).
 
+## Authentication (JWT)
+
+JWT bearer authentication is available but optional. When no secret is configured, the API runs
+without authentication in Development (or falls back to IdentityServer4 in other environments).
+To enable the dev-friendly HS256 JWT scheme, set the following environment variables (Docker
+Compose double-underscore convention, matching the `Jwt:Secret` / `Jwt:Issuer` / `Jwt:Audience`
+configuration keys):
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `Jwt__Secret` | Yes (enables JWT auth) | Symmetric key used to sign and validate HS256 tokens. Use a long random string; never reuse a real production secret locally. |
+| `Jwt__Issuer` | No | Expected `iss` claim. When omitted, issuer validation is skipped. |
+| `Jwt__Audience` | No | Expected `aud` claim. When omitted, audience validation is skipped. |
+
+Example additions to `docker-compose.yaml`'s `api` service (also present there, commented out):
+
+```yaml
+environment:
+  - Jwt__Secret=replace-with-a-long-random-development-secret
+  - Jwt__Issuer=gtmotive-estimate-api
+  - Jwt__Audience=gtmotive-estimate-clients
+```
+
+### Minting a dev token
+
+Use the `GtMotive.Estimate.Microservice.DevTokenGenerator` CLI tool (under `tools/`) to generate a
+token signed with the same secret, for manual testing via curl or Swagger's "Authorize" button:
+
+```bash
+dotnet run --project tools/GtMotive.Estimate.Microservice.DevTokenGenerator -- \
+  --secret replace-with-a-long-random-development-secret \
+  --issuer gtmotive-estimate-api \
+  --audience gtmotive-estimate-clients \
+  --subject local-dev-user \
+  --role Admin
+```
+
+Or supply the secret via the `Jwt__Secret` environment variable instead of `--secret` to avoid
+having it echoed/redacted on the command line:
+
+```bash
+Jwt__Secret=replace-with-a-long-random-development-secret \
+  dotnet run --project tools/GtMotive.Estimate.Microservice.DevTokenGenerator -- --subject local-dev-user
+```
+
+Run `--help` for the full list of flags (`--minutes` for token lifetime, repeatable `--role`, etc.).
+This tool is for local/dev use only and must never be used to issue production tokens.
+
 ## Tests
 
 | Type | Project | What it covers | Status |
@@ -164,6 +212,7 @@ dotnet test test/infrastructure/GtMotive.Estimate.Microservice.InfrastructureTes
 Notes:
 
 - Functional and infrastructure tests use Testcontainers.MongoDb and are organized to reuse a single container per test collection to reduce startup cost.
+- The JWT authentication tests (`DevJwtTokenGeneratorTests` in Functional, `JwtAuthenticationEndpointTests` in Infrastructure) do not require Docker/Mongo — they spin up an in-memory `TestServer`/`ServiceCollection` wired only with the JWT bearer scheme.
 - Tests follow the repository's existing coding conventions and the project's .editorconfig.
 
 

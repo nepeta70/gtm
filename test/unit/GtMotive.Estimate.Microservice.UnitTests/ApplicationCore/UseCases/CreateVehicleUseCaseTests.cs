@@ -24,7 +24,16 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private readonly Mock<ICreateVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<CreateVehicleUseCase>> _logger = new();
         private readonly Mock<ITelemetry> _telemetry = new(MockBehavior.Strict);
+        private readonly Mock<IBusFactory> _busFactory = new(MockBehavior.Strict);
         private readonly Mock<IBus> _bus = new(MockBehavior.Strict);
+
+        public CreateVehicleUseCaseTests()
+        {
+            // Setup the factory to always return our private _bus mock
+            _busFactory
+                .Setup(f => f.GetClient(typeof(VehicleCreatedEvent)))
+                .Returns(_bus.Object);
+        }
 
         /// <summary>
         /// Verifies that executing the use case with a null input payload throws an <see cref="ArgumentNullException"/>.
@@ -153,7 +162,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 _outputPort.Object,
                 _logger.Object,
                 _telemetry.Object,
-                _bus.Object);
+                _busFactory.Object);
 
         private void VerifyNoOtherCalls()
         {
@@ -161,6 +170,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _unitOfWork.VerifyNoOtherCalls();
             _outputPort.VerifyNoOtherCalls();
             _telemetry.VerifyNoOtherCalls();
+            _busFactory.VerifyNoOtherCalls();
             _bus.VerifyNoOtherCalls();
         }
     }

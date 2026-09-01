@@ -18,14 +18,14 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
     /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
-    /// <param name="bus">The message bus abstraction for domain event publishing.</param>
+    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
     public sealed class CreateVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         ICreateVehicleOutputPort outputPort,
         IAppLogger<CreateVehicleUseCase> logger,
         ITelemetry telemetry,
-        IBus bus) : IUseCase<CreateVehicleInput>
+        IBusFactory busFactory) : IUseCase<CreateVehicleInput>
     {
         /// <summary>
         /// Executes the vehicle creation use case.
@@ -64,7 +64,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
 
             telemetry.TrackMetric(nameof(VehicleCreatedEvent), 1);
 
-            await bus.Send(vehicleCreatedEvent).ConfigureAwait(false);
+            await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent).ConfigureAwait(false);
 
             logger.LogInformation("Vehicle {VehicleId} successfully created", vehicle.Id);
 

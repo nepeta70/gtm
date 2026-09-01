@@ -1,15 +1,19 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Api;
+using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure;
+using GtMotive.Estimate.Microservice.Infrastructure.Bus;
 using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
+using GtMotive.Estimate.Microservice.Infrastructure.Resilience;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using Polly;
 using Testcontainers.MongoDb;
 using Xunit;
 
@@ -29,7 +33,6 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
         {
             _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
 
-            // FIX: Pass the image name to the constructor to avoid the obsolete warning
             _mongoContainer = new MongoDbBuilder("mongo:7.0").Build();
         }
 
@@ -67,7 +70,8 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             services.AddSingleton(sp =>
             {
                 var database = sp.GetRequiredService<IMongoClient>().GetDatabase(_testDbName);
-                VehicleCollectionSetup.EnsureIndexes(database);
+                var pipeline = sp.GetRequiredKeyedService<ResiliencePipeline>(ResiliencePipelineNames.Mongo);
+                VehicleCollectionSetup.EnsureIndexes(database, pipeline);
                 return database;
             });
 
@@ -145,6 +149,9 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             services.AddApiDependencies();
             services.AddLogging();
             services.AddBaseInfrastructure(true);
+
+            services.AddScoped<IBusFactory, BusFactory>();
+            services.AddKeyedScoped<IBus, NoOpBus>(BusNames.NoOp);
         }
     }
 }

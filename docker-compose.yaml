@@ -8,10 +8,23 @@ services:
       - "8081:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      
+      # MongoDB Configuration
       - MongoDb__ConnectionString=mongodb://mongo:27017/gtmotive-estimate
       - MongoDb__MongoDbDatabaseName=gtmotive-estimate
+      
+      # Azure Service Bus Emulator Configuration
+      - Bus__Provider=Azure
+      - Bus__ConnectionString=Endpoint=sb://servicebus-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;
+      - Bus__DefaultQueueOrTopicName=gtmotive-events
+      
+      # JWT Bearer Authentication (Local Dev)
+      - Jwt__Secret=replace-with-a-long-random-development-secret
+      - Jwt__Issuer=gtmotive-estimate-api
+      - Jwt__Audience=gtmotive-estimate-clients
     depends_on:
       - mongo
+      - servicebus-emulator
     networks:
       - gtmotive-network
 
@@ -27,9 +40,65 @@ services:
     networks:
       - gtmotive-network
 
+  # --- Azure Service Bus Emulator Services ---
+  servicebus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    container_name: servicebus-emulator
+    environment:
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: "YourStrongPassw0rd123"
+      ACCEPT_EULA: "Y"
+    depends_on:
+      sqledge:
+        condition: service_healthy
+    ports:
+      - "5672:5672"
+    networks:
+      - gtmotive-network
+    configs:
+      - source: sb_config
+        target: /ServiceBus_Emulator/ConfigFiles/Config.json
+
+  sqledge:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sqledge
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrongPassw0rd123"
+    ports:
+      - "1433:1433"
+    networks:
+      - gtmotive-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrongPassw0rd123", "-Q", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   mongo-data:
 
 networks:
   gtmotive-network:
     driver: bridge
+
+# Inline configuration for the Service Bus Emulator
+configs:
+  sb_config:
+    content: |
+      {
+        "UserConfig": {
+          "Namespaces": [
+            {
+              "Name": "sbemulatorns",
+              "Queues": [
+                { "Name": "gtmotive-events", "Properties": {} }
+              ],
+              "Topics": []
+            }
+          ],
+          "Logging": {
+            "Type": "Console"
+          }
+        }
+      }

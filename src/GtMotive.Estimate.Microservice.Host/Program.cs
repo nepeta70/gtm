@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
@@ -9,8 +8,8 @@ using GtMotive.Estimate.Microservice.Api.Endpoints;
 using GtMotive.Estimate.Microservice.Host.Configuration;
 using GtMotive.Estimate.Microservice.Host.DependencyInjection;
 using GtMotive.Estimate.Microservice.Infrastructure;
+using GtMotive.Estimate.Microservice.Infrastructure.Bus.Settings;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
-using IdentityServer4.AccessTokenValidation;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -58,13 +57,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddApiResilience();
 
 var appSettingsSection = builder.Configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
 var appSettings = appSettingsSection.Get<AppSettings>();
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
+builder.Services.Configure<BusSettings>(builder.Configuration.GetSection("Bus"));
 builder.Services.AddControllers(ApiConfiguration.ConfigureControllers)
     .WithApiControllers();
+
+// Configure authentication via Host extension to keep Program minimal and consistent with repo patterns
+builder.Services.AddHostAuthentication(builder.Configuration, builder.Environment, appSettings);
 
 builder.Services.AddBaseInfrastructure(builder.Environment.IsDevelopment());
 
@@ -79,19 +83,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
-
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
-})
-    .AddIdentityServerAuthentication(options =>
-    {
-        options.Authority = appSettings.JwtAuthority;
-        options.ApiName = "estimate-api";
-        options.SupportedTokens = SupportedTokens.Jwt;
-    });
 
 builder.Services.AddSwagger(appSettings, builder.Configuration);
 
@@ -136,6 +127,7 @@ if (app.Environment.IsDevelopment())
 app.UseSwaggerInApplication(pathBase, builder.Configuration);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseApiResilience();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

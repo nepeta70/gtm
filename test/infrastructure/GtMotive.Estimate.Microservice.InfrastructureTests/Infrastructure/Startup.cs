@@ -1,9 +1,14 @@
-﻿using Acheve.AspNetCore.TestHost.Security;
+﻿using System;
+using Acheve.AspNetCore.TestHost.Security;
 using Acheve.TestHost;
 using GtMotive.Estimate.Microservice.Api;
 using GtMotive.Estimate.Microservice.Api.Endpoints;
+using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure;
+using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
+using GtMotive.Estimate.Microservice.Infrastructure.Bus;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +45,16 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             services.AddControllers(ApiConfiguration.ConfigureControllers)
                 .WithApiControllers();
             services.AddBaseInfrastructure(true);
+            services.AddKeyedScoped<IBus, NoOpBus>(BusNames.NoOp);
+
+            services.AddAuthorization();
+            services.TryAddJwtBearerAuthentication(Configuration, requireHttpsMetadata: false);
+
+            // Test-only: disable the default 5-minute clock skew tolerance so expired-token
+            // assertions do not need to wait several minutes for a real expiry to register.
+            services.PostConfigure<JwtBearerOptions>(
+                JwtBearerDefaults.AuthenticationScheme,
+                options => options.TokenValidationParameters.ClockSkew = TimeSpan.Zero);
         }
     }
 }

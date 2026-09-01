@@ -1,14 +1,24 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Domain.Entities;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
+using GtMotive.Estimate.Microservice.Infrastructure.Resilience;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using Polly;
 
 namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
 {
-    public sealed class MongoVehicleReadRepository(IMongoDatabase database, IAppLogger<MongoVehicleReadRepository> logger) : IVehicleReadRepository
+    /// <summary>
+    /// MongoDB implementation of <see cref="IVehicleReadRepository"/>.
+    /// Applies the shared MongoDB resilience pipeline to every query.
+    /// </summary>
+    public sealed class MongoVehicleReadRepository(
+        IMongoDatabase database,
+        IAppLogger<MongoVehicleReadRepository> logger,
+        [FromKeyedServices(ResiliencePipelineNames.Mongo)] ResiliencePipeline mongoPipeline) : IVehicleReadRepository
     {
         private readonly IMongoCollection<VehicleDocument> _collection = database.GetCollection<VehicleDocument>("vehicles");
 
@@ -18,16 +28,20 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
 
             logger.LogInformation("Retrieving available vehicles manufactured on or after {MinimumDate}", minimumDate);
 
-            var cursor = await _collection
-                .Find(d => d.Status == VehicleStatus.Available &&
-                           d.ManufactureDate >= minimumDate)
-                .Project(d => new VehicleReadModel(
-                    d.Id,
-                    d.Brand,
-                    d.Model,
-                    d.LicensePlate,
-                    d.ManufactureDate))
-                .ToListAsync(cancellationToken)
+            var cursor = await mongoPipeline
+                .ExecuteAsync(
+                    async ct => await _collection
+                        .Find(d => d.Status == VehicleStatus.Available &&
+                                   d.ManufactureDate >= minimumDate)
+                        .Project(d => new VehicleReadModel(
+                            d.Id,
+                            d.Brand,
+                            d.Model,
+                            d.LicensePlate,
+                            d.ManufactureDate))
+                        .ToListAsync(ct)
+                        .ConfigureAwait(false),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             logger.LogInformation("Found {Count} available vehicles", cursor.Count);
@@ -39,9 +53,13 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
         {
             logger.LogInformation("Checking for active rentals for renter {RenterId}", renterId);
 
-            var count = await _collection
-                .Find(d => d.Status == VehicleStatus.Rented && d.RenterId == renterId)
-                .CountDocumentsAsync(cancellationToken)
+            var count = await mongoPipeline
+                .ExecuteAsync(
+                    async ct => await _collection
+                        .Find(d => d.Status == VehicleStatus.Rented && d.RenterId == renterId)
+                        .CountDocumentsAsync(ct)
+                        .ConfigureAwait(false),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             var hasActiveRental = count > 0;

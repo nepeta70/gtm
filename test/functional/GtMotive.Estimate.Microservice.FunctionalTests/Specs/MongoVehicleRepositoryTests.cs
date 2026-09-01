@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -86,6 +86,30 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Specs
 
                 await act.Should().ThrowAsync<ConflictException>()
                     .WithMessage($"A vehicle with license plate '{vehicle2.LicensePlate}' already exists.");
+            });
+        }
+
+        [Fact]
+        public async Task UpdateVehicleWithRenterThatAlreadyHasActiveRentalThrowsConflictException()
+        {
+            await Fixture.UsingScope(async sp =>
+            {
+                var writeRepo = sp.GetRequiredService<IVehicleWriteRepository>();
+
+                var first = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "RNT-001", DateTime.Today.AddYears(-1));
+                first.Rent("renter-dup");
+                await writeRepo.AddAsync(first, CancellationToken.None);
+
+                var second = new Vehicle(Guid.NewGuid(), "Seat", "Leon", "RNT-002", DateTime.Today.AddYears(-1));
+                await writeRepo.AddAsync(second, CancellationToken.None);
+
+                // Simulates the race between HasActiveRentalAsync and the actual update:
+                // the sparse unique index on RenterId rejects the second concurrent rental.
+                second.Rent("renter-dup");
+
+                Func<Task> act = async () => await writeRepo.UpdateAsync(second, CancellationToken.None);
+
+                await act.Should().ThrowAsync<ConflictException>();
             });
         }
     }
