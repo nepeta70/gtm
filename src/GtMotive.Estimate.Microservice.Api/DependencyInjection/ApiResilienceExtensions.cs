@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.CircuitBreaker;
 
 namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
 {
@@ -37,12 +39,26 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
                 });
             });
 
+            // 3. Polly Inbound Circuit Breaker (Failure Protection)
+            var circuitBreakerPipeline = new ResiliencePipelineBuilder()
+                .AddCircuitBreaker(new CircuitBreakerStrategyOptions
+                {
+                    FailureRatio = ApiResilienceDefaults.FailureRatio,
+                    SamplingDuration = ApiResilienceDefaults.SamplingDuration,
+                    MinimumThroughput = ApiResilienceDefaults.MinimumThroughput,
+                    BreakDuration = ApiResilienceDefaults.BreakDuration
+                })
+                .Build();
+
+            services.AddSingleton(circuitBreakerPipeline);
+
             return services;
         }
 
         public static WebApplication UseApiResilience(this WebApplication app)
         {
             app.UseRateLimiter();
+            app.UseMiddleware<CircuitBreakerMiddleware>();
             app.UseRequestTimeouts();
 
             return app;
