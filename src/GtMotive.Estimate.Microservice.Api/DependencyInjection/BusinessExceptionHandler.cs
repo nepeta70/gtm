@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Domain.Exceptions;
@@ -10,8 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
 {
-    public sealed class BusinessExceptionHandler : IExceptionHandler
+    public sealed class BusinessExceptionHandler(IServiceScopeFactory serviceScopeFactory) : IExceptionHandler
     {
+        private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
+
         public async ValueTask<bool> TryHandleAsync(
             HttpContext httpContext,
             Exception exception,
@@ -20,9 +23,11 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
             ArgumentNullException.ThrowIfNull(httpContext);
             ArgumentNullException.ThrowIfNull(exception);
 
-            var appLogger = httpContext.RequestServices.GetRequiredService<IAppLogger<BusinessExceptionHandler>>();
+            using var scope = _serviceScopeFactory.CreateScope();
+            var appLogger = scope.ServiceProvider.GetRequiredService<IAppLogger<BusinessExceptionHandler>>();
+            var telemetry = scope.ServiceProvider.GetRequiredService<ITelemetry>();
 
-            appLogger.LogError(exception, "Exception captured in DomainExceptionHandler.");
+            appLogger.LogError(exception, "Exception captured in BusinessExceptionHandler.");
 
             switch (exception)
             {
@@ -37,7 +42,14 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
                             Instance = httpContext.Request.Path,
                         };
 
-                        appLogger.LogWarning("Domain Exception: {status} - {detail}", problemDetails.Status, problemDetails.Detail);
+                        appLogger.LogWarning("Handled {ExceptionType} with status {Status} and detail {Detail}", nameof(DomainException), problemDetails.Status, problemDetails.Detail);
+
+                        telemetry.TrackEvent(nameof(DomainException), new Dictionary<string, string>
+                        {
+                            { nameof(Type), domainException.GetType().Name },
+                            { nameof(Exception.Message), domainException.Message },
+                            { nameof(HttpContext.Request.Path), httpContext.Request.Path }
+                        });
 
                         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
                         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
@@ -56,6 +68,13 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
                             Instance = httpContext.Request.Path,
                         };
 
+                        telemetry.TrackEvent(nameof(ConflictException), new Dictionary<string, string>
+                        {
+                            { nameof(Type), conflictException.GetType().Name },
+                            { nameof(Exception.Message), conflictException.Message },
+                            { nameof(HttpContext.Request.Path), httpContext.Request.Path }
+                        });
+
                         httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
                         return true;
@@ -63,7 +82,6 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
 
                 case OperationCanceledException:
                     {
-                        // We use 504 Gateway Timeout because the server timed out waiting for the downstream operation (e.g. MongoDB)
                         var problemDetails = new ProblemDetails
                         {
                             Type = "https://tools.ietf.org/html/rfc7231#section-6.6.5",
@@ -75,8 +93,12 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
 
                         appLogger.LogWarning("Request canceled due to timeout or client disconnect.");
 
-                        // Note: We check httpContext.Response.HasStarted because if the client disconnected,
-                        // we might not be able to write to the response stream.
+                        telemetry.TrackEvent(nameof(OperationCanceledException), new Dictionary<string, string>
+                        {
+                            { nameof(Type), exception.GetType().Name },
+                            { nameof(HttpContext.Request.Path), httpContext.Request.Path }
+                        });
+
                         if (!httpContext.Response.HasStarted)
                         {
                             httpContext.Response.StatusCode = StatusCodes.Status504GatewayTimeout;
@@ -98,6 +120,13 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
                         };
 
                         appLogger.LogError(exception, "Unhandled Exception");
+
+                        telemetry.TrackEvent(nameof(Exception), new Dictionary<string, string>
+                        {
+                            { nameof(Type), exception.GetType().Name },
+                            { nameof(Exception.Message), exception.Message },
+                            { nameof(HttpContext.Request.Path), httpContext.Request.Path }
+                        });
 
                         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
                         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
