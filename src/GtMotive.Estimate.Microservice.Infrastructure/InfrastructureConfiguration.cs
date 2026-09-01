@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
@@ -9,10 +9,12 @@ using GtMotive.Estimate.Microservice.Infrastructure.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Logging;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
 using GtMotive.Estimate.Microservice.Infrastructure.Persistence;
+using GtMotive.Estimate.Microservice.Infrastructure.Resilience;
 using GtMotive.Estimate.Microservice.Infrastructure.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using Polly;
 
 [assembly: CLSCompliant(false)]
 
@@ -29,6 +31,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
 
             return new InfrastructureBuilder(services, isDevelopment)
                 .AddCoreServices()
+                .AddResilience()
                 .AddMongoDb()
                 .AddBuses()
                 .AddEnvironmentSpecificServices();
@@ -44,6 +47,12 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
             {
                 Services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
                 Services.AddAutoMapper(cfg => cfg.AddProfile<VehicleMappingProfile>());
+                return this;
+            }
+
+            public InfrastructureBuilder AddResilience()
+            {
+                Services.AddResiliencePipelines();
                 return this;
             }
 
@@ -66,7 +75,8 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
                     }
 
                     var database = client.GetDatabase(settings.MongoDbDatabaseName);
-                    VehicleCollectionSetup.EnsureIndexes(database);
+                    var pipeline = sp.GetRequiredKeyedService<ResiliencePipeline>(ResiliencePipelineNames.Mongo);
+                    VehicleCollectionSetup.EnsureIndexes(database, pipeline);
 
                     return database;
                 });
@@ -87,8 +97,9 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
                 {
                     var settings = sp.GetRequiredService<IOptions<BusSettings>>().Value;
                     var logger = sp.GetRequiredService<IAppLogger<AzureServiceBus>>();
+                    var pipeline = sp.GetRequiredKeyedService<ResiliencePipeline>(ResiliencePipelineNames.ServiceBus);
 
-                    return new AzureServiceBus(settings.ConnectionString, settings.DefaultQueueOrTopicName, logger);
+                    return new AzureServiceBus(settings.ConnectionString, settings.DefaultQueueOrTopicName, logger, pipeline);
                 });
 
                 return this;

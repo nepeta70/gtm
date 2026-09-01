@@ -1,13 +1,16 @@
-﻿using System;
+using System;
 using MongoDB.Driver;
+using Polly;
 
 namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
 {
     public static class VehicleCollectionSetup
     {
-        public static void EnsureIndexes(IMongoDatabase database)
+        public static void EnsureIndexes(IMongoDatabase database, ResiliencePipeline resiliencePipeline)
         {
             ArgumentNullException.ThrowIfNull(database);
+            ArgumentNullException.ThrowIfNull(resiliencePipeline);
+
             var collection = database.GetCollection<VehicleDocument>("vehicles");
 
             // 1. LicensePlate must be unique across the fleet.
@@ -31,8 +34,13 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                     Name = "renterId_unique_sparse"
                 });
 
-            collection.Indexes.CreateOne(licensePlateIndex);
-            collection.Indexes.CreateOne(renterIdIndex);
+            // Runs at startup, when MongoDB (e.g. a fresh Docker container) may not be
+            // accepting connections yet, so it goes through the shared retry pipeline.
+            resiliencePipeline.Execute(() =>
+            {
+                collection.Indexes.CreateOne(licensePlateIndex);
+                collection.Indexes.CreateOne(renterIdIndex);
+            });
         }
     }
 }
