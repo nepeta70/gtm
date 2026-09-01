@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using GtMotive.Estimate.Microservice.Api.Authorization;
+using GtMotive.Estimate.Microservice.Api.Resilience;
 using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ListAvailableVehicles;
 using GtMotive.Estimate.Microservice.Api.UseCases.RentVehicle;
@@ -23,7 +24,8 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
         {
             var group = app.MapGroup("api/vehicles")
                            .WithTags("Vehicles")
-                           .RequireAuthorization();
+                           .RequireAuthorization()
+                           .RequireRateLimiting(ApiResiliencePolicyNames.EndpointConcurrency);
 
             group.MapPost(string.Empty, async (
                 CreateVehicleRequest request,

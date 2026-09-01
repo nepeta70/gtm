@@ -61,6 +61,31 @@ namespace GtMotive.Estimate.Microservice.Api.DependencyInjection
                         return true;
                     }
 
+                case OperationCanceledException:
+                    {
+                        // We use 504 Gateway Timeout because the server timed out waiting for the downstream operation (e.g. MongoDB)
+                        var problemDetails = new ProblemDetails
+                        {
+                            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.5",
+                            Status = StatusCodes.Status504GatewayTimeout,
+                            Title = "Gateway Timeout",
+                            Detail = "The request was canceled due to a timeout or client disconnect.",
+                            Instance = httpContext.Request.Path,
+                        };
+
+                        appLogger.LogWarning("Request canceled due to timeout or client disconnect.");
+
+                        // Note: We check httpContext.Response.HasStarted because if the client disconnected,
+                        // we might not be able to write to the response stream.
+                        if (!httpContext.Response.HasStarted)
+                        {
+                            httpContext.Response.StatusCode = StatusCodes.Status504GatewayTimeout;
+                            await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+                        }
+
+                        return true;
+                    }
+
                 default:
                     {
                         var problemDetails = new ProblemDetails

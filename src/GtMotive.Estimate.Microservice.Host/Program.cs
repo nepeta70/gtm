@@ -57,6 +57,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddApiResilience();
 
 var appSettingsSection = builder.Configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
@@ -126,6 +127,7 @@ if (app.Environment.IsDevelopment())
 app.UseSwaggerInApplication(pathBase, builder.Configuration);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseApiResilience();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -27,88 +27,100 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
         {
             ArgumentNullException.ThrowIfNull(services);
 
-            AddCoreServices(services);
-            AddMongoDb(services);
-            AddBuses(services);
-            AddEnvironmentSpecificServices(services, isDevelopment);
-
-            return new InfrastructureBuilder(services);
+            return new InfrastructureBuilder(services, isDevelopment)
+                .AddCoreServices()
+                .AddMongoDb()
+                .AddBuses()
+                .AddEnvironmentSpecificServices();
         }
 
-        private static void AddCoreServices(IServiceCollection services)
+        private sealed class InfrastructureBuilder(IServiceCollection services, bool isDevelopment) : IInfrastructureBuilder
         {
-            services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
-            services.AddAutoMapper(cfg => cfg.AddProfile<VehicleMappingProfile>());
-        }
+            public IServiceCollection Services { get; } = services;
 
-        private static void AddMongoDb(IServiceCollection services)
-        {
-            services.AddSingleton<IMongoClient>(sp =>
+            public bool IsDevelopment { get; } = isDevelopment;
+
+            public InfrastructureBuilder AddCoreServices()
             {
-                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-                return new MongoClient(settings.ConnectionString);
-            });
-
-            services.AddSingleton(sp =>
-            {
-                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-                var client = sp.GetRequiredService<IMongoClient>();
-                var database = client.GetDatabase(settings.MongoDbDatabaseName);
-
-                VehicleCollectionSetup.EnsureIndexes(database);
-
-                return database;
-            });
-
-            services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
-            services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
-        }
-
-        private static void AddBuses(IServiceCollection services)
-        {
-            services.AddOptions<BusSettings>();
-            services.AddScoped<IBusFactory, BusFactory>();
-
-            services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
-            services.AddKeyedScoped<IBus>(BusNames.Azure, (sp, key) =>
-            {
-                var settings = sp.GetRequiredService<IOptions<BusSettings>>().Value;
-                var logger = sp.GetRequiredService<IAppLogger<AzureServiceBus>>();
-
-                return new AzureServiceBus(settings.ConnectionString, settings.DefaultQueueOrTopicName, logger);
-            });
-        }
-
-        private static void AddEnvironmentSpecificServices(IServiceCollection services, bool isDevelopment)
-        {
-            var jwtSecret = Environment.GetEnvironmentVariable("Jwt__Secret") ?? Environment.GetEnvironmentVariable("Jwt:Secret");
-            var useJwtAuth = !string.IsNullOrEmpty(jwtSecret);
-
-            if (isDevelopment)
-            {
-                services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
-                services.AddScoped<ITelemetry, NoOpTelemetry>();
-                services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+                Services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
+                Services.AddAutoMapper(cfg => cfg.AddProfile<VehicleMappingProfile>());
+                return this;
             }
-            else
+
+            public InfrastructureBuilder AddMongoDb()
             {
-                if (useJwtAuth)
+                Services.AddSingleton<IMongoClient>(sp =>
                 {
-                    services.AddScoped<IAuthorizationService, JwtAuthorizationService>();
+                    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                    return new MongoClient(settings.ConnectionString);
+                });
+
+                Services.AddSingleton(sp =>
+                {
+                    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                    var client = sp.GetRequiredService<IMongoClient>();
+
+                    if (IsDevelopment)
+                    {
+                        client.DropDatabase(settings.MongoDbDatabaseName);
+                    }
+
+                    var database = client.GetDatabase(settings.MongoDbDatabaseName);
+                    VehicleCollectionSetup.EnsureIndexes(database);
+
+                    return database;
+                });
+
+                Services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+                Services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
+                Services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
+                return this;
+            }
+
+            public InfrastructureBuilder AddBuses()
+            {
+                Services.AddOptions<BusSettings>();
+                Services.AddScoped<IBusFactory, BusFactory>();
+
+                Services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
+                Services.AddKeyedScoped<IBus>(BusNames.Azure, (sp, key) =>
+                {
+                    var settings = sp.GetRequiredService<IOptions<BusSettings>>().Value;
+                    var logger = sp.GetRequiredService<IAppLogger<AzureServiceBus>>();
+
+                    return new AzureServiceBus(settings.ConnectionString, settings.DefaultQueueOrTopicName, logger);
+                });
+
+                return this;
+            }
+
+            public InfrastructureBuilder AddEnvironmentSpecificServices()
+            {
+                var jwtSecret = Environment.GetEnvironmentVariable("Jwt__Secret")
+                                ?? Environment.GetEnvironmentVariable("Jwt:Secret");
+                var useJwtAuth = !string.IsNullOrEmpty(jwtSecret);
+
+                if (IsDevelopment)
+                {
+                    Services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+                    Services.AddScoped<ITelemetry, NoOpTelemetry>();
                 }
                 else
                 {
-                    services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+                    if (useJwtAuth)
+                    {
+                        Services.AddScoped<IAuthorizationService, JwtAuthorizationService>();
+                    }
+                    else
+                    {
+                        Services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+                    }
+
+                    Services.AddScoped<ITelemetry, AppTelemetry>();
                 }
 
-                services.AddScoped<ITelemetry, AppTelemetry>();
-                services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
+                return this;
             }
-        }
-
-        private sealed class InfrastructureBuilder(IServiceCollection services) : IInfrastructureBuilder
-        {
-            public IServiceCollection Services { get; } = services;
         }
     }
 }
