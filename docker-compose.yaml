@@ -17,7 +17,9 @@ services:
       - Bus__Provider=Azure
       - Bus__ConnectionString=Endpoint=sb://servicebus-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;
       - Bus__DefaultQueueOrTopicName=gtmotive-events
-      
+
+      - AppSettings__JwtAuthority=https://identity.mygtmotive.com
+    
       # JWT Bearer Authentication (Local Dev)
       - Jwt__Secret=replace-with-a-long-random-development-secret
       - Jwt__Issuer=gtmotive-estimate-api

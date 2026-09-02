@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
@@ -34,7 +34,8 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
                 .AddResilience()
                 .AddMongoDb()
                 .AddBuses()
-                .AddEnvironmentSpecificServices();
+                .AddAuthorizationServices()
+                .AddTelemetryServices();
         }
 
         private sealed class InfrastructureBuilder(IServiceCollection services, bool isDevelopment) : IInfrastructureBuilder
@@ -105,28 +106,33 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
                 return this;
             }
 
-            public InfrastructureBuilder AddEnvironmentSpecificServices()
+            public InfrastructureBuilder AddAuthorizationServices()
             {
                 var jwtSecret = Environment.GetEnvironmentVariable("Jwt__Secret")
                                 ?? Environment.GetEnvironmentVariable("Jwt:Secret");
-                var useJwtAuth = !string.IsNullOrEmpty(jwtSecret);
 
-                if (IsDevelopment)
+                var useJwtAuth = !IsDevelopment && !string.IsNullOrEmpty(jwtSecret);
+
+                if (useJwtAuth)
+                {
+                    Services.AddScoped<IAuthorizationService, JwtAuthorizationService>();
+                }
+                else
                 {
                     Services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
+                }
+
+                return this;
+            }
+
+            public InfrastructureBuilder AddTelemetryServices()
+            {
+                if (IsDevelopment)
+                {
                     Services.AddScoped<ITelemetry, NoOpTelemetry>();
                 }
                 else
                 {
-                    if (useJwtAuth)
-                    {
-                        Services.AddScoped<IAuthorizationService, JwtAuthorizationService>();
-                    }
-                    else
-                    {
-                        Services.AddScoped<IAuthorizationService, NoOpAuthorizationService>();
-                    }
-
                     Services.AddScoped<ITelemetry, AppTelemetry>();
                 }
 

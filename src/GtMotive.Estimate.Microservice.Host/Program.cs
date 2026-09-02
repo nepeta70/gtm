@@ -67,10 +67,8 @@ builder.Services.Configure<BusSettings>(builder.Configuration.GetSection("Bus"))
 builder.Services.AddControllers(ApiConfiguration.ConfigureControllers)
     .WithApiControllers();
 
-// Configure authentication via Host extension to keep Program minimal and consistent with repo patterns
-builder.Services.AddHostAuthentication(builder.Configuration, builder.Environment, appSettings);
-
 builder.Services.AddBaseInfrastructure(builder.Environment.IsDevelopment());
+builder.Services.AddHostAuthentication(builder.Configuration, builder.Environment, appSettings);
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

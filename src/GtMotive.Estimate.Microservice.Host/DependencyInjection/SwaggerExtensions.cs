@@ -6,7 +6,7 @@ using GtMotive.Estimate.Microservice.Host.Infrastructure.Swagger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi; // FIX: Added this using
+using Microsoft.OpenApi;
 
 namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
 {
@@ -37,7 +37,7 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
                         // Define the OAuth2.0 scheme that's in use (i.e. Implicit Flow)
                         options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
                         {
-                            Type = SecuritySchemeType.OAuth2, // FIX: Use SecuritySchemeType instead of OpenApiSecuritySchemeType
+                            Type = SecuritySchemeType.OAuth2,
                             Name = "oauth2",
                             Flows = configuration.GetValue<string>("Swagger:AuthFlow") == "AuthorizationCode"
                                 ? new OpenApiOAuthFlows
@@ -84,7 +84,6 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
             {
                 if (!pathBase.IsDefault)
                 {
-                    // FIX: Removed options.SerializeAsV2 = true; (no longer supported in v2.0)
                     options.RouteTemplate = "swagger/{documentName}/swagger.json";
                     options.PreSerializeFilters.Add((document, request) =>
                     {
@@ -94,7 +93,6 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
                             {
                                 Url = $"{request.Scheme}://{request.Host.Value}{pathBase.CurrentWithoutTrailingSlash}"
                             }
-
                         ];
                     });
                 }
