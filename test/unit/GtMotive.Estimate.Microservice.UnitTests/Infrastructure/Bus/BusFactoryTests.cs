@@ -13,21 +13,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Infrastructure.Bus
     public sealed class BusFactoryTests
     {
         [Theory]
-        [InlineData("NoOp")]
-        [InlineData("noop")]
-        [InlineData("")]
-        [InlineData(null)]
-        public void GetClientWithNoOpProviderReturnsNoOpBus(string provider)
-        {
-            var sp = CreateServices().BuildServiceProvider();
-
-            var factory = new BusFactory(sp, CreateOptions(provider));
-            var bus = factory.GetClient(typeof(object));
-
-            bus.Should().BeOfType<NoOpBus>();
-        }
-
-        [Theory]
         [InlineData("InMemory")]
         [InlineData("INMEMORY")]
         [InlineData("inmemory")]
@@ -56,11 +41,8 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Infrastructure.Bus
         {
             var services = new ServiceCollection();
 
-            // Register the logger dependency required by InMemoryBus
             services.AddSingleton(Mock.Of<IAppLogger<InMemoryBus>>());
 
-            // Register buses as keyed services exactly like the production InfrastructureConfiguration
-            services.AddKeyedScoped<IBus, NoOpBus>(BusNames.NoOp);
             services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
 
             return services;

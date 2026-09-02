@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -151,7 +151,7 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
             services.AddBaseInfrastructure(true);
 
             services.AddScoped<IBusFactory, BusFactory>();
-            services.AddKeyedScoped<IBus, NoOpBus>(BusNames.NoOp);
+            services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
         }
     }
 }

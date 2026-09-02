@@ -45,7 +45,7 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             services.AddControllers(ApiConfiguration.ConfigureControllers)
                 .WithApiControllers();
             services.AddBaseInfrastructure(true);
-            services.AddKeyedScoped<IBus, NoOpBus>(BusNames.NoOp);
+            services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
 
             services.AddAuthorization();
             services.TryAddJwtBearerAuthentication(Configuration, requireHttpsMetadata: false);
