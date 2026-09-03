@@ -1,4 +1,4 @@
-using GtMotive.Estimate.IdentityServer;
+﻿using GtMotive.Estimate.IdentityServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 
 var issuerUri = builder.Configuration.GetValue<string>("IdentityServer:IssuerUri");
+
+builder.Services.AddCors();
 
 builder.Services
     .AddIdentityServer(options =>
