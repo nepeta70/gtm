@@ -23,7 +23,7 @@ Don't use GUI mode for load testing!, only for Test creation and Test debugging.
 
 	1. Execute in PowerShell console.
 		
-		jmeter -H proxy.andrade.einsanet.es -P 8080 -u username -a password
+		jmeter -H proxy.andrade.einsanet.es -P 53573 -u username -a password
 
 	2. Open load tests template.
 

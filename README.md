@@ -107,8 +107,8 @@ No external dependencies need to be installed on the host. Docker Compose starts
 docker compose up --build
 ```
 
-- API: `http://localhost:8080`
-- Swagger: `http://localhost:8080/swagger`
+- API: `http://localhost:53573`
+- Swagger: `http://localhost:53573/swagger`
 - IdentityServer: `http://host.docker.internal:5001` (discovery: `/.well-known/openid-configuration`)
 - MongoDB: `localhost:27017`
 
@@ -134,7 +134,7 @@ The Host project references `docker-compose.dcproj`, allowing Docker Compose to 
 | `docker-compose.dcproj` | Visual Studio Docker Compose integration |
 | `.dockerignore` | Excludes build artifacts, IDE files, and secrets from the image context |
 
-The API container listens on port **8080** (`ASPNETCORE_URLS=http://+:8080`); the IdentityServer container listens on **5001**.
+The API container listens on port **53573** (`ASPNETCORE_URLS=http://+:53573`); the IdentityServer container listens on **5001**.
 
 ## Authentication (JWT)
 
@@ -166,7 +166,7 @@ Configuration lives in `src/GtMotive.Estimate.IdentityServer/appsettings.json` a
 Roles map to endpoint authorization policies: creating vehicles requires `Admin`; renting,
 returning and listing require an authenticated user (`User` for rent/return).
 
-**Try it from Swagger UI**: open `http://localhost:8080/swagger`, click *Authorize*, keep client id
+**Try it from Swagger UI**: open `http://localhost:53573/swagger`, click *Authorize*, keep client id
 `client-gtestimate-swagger`, sign in as `admin`/`admin` on the IdentityServer login page.
 
 **Try it with curl (client credentials)**:
@@ -178,7 +178,7 @@ TOKEN=$(curl -s -X POST http://host.docker.internal:5001/connect/token \
   -d client_secret=gtmotive \
   -d scope=estimate-public-scope | jq -r .access_token)
 
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/vehicles/available
+curl -H "Authorization: Bearer $TOKEN" http://localhost:53573/api/vehicles/available
 ```
 
 ### Alternative: symmetric HS256 JWT

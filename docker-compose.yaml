@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: src/GtMotive.Estimate.Microservice.Host/Dockerfile
     ports:
-      - "8080:8080"
-      - "8081:8081"
+      - "53573:53573"
+      - "53574:53574"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       

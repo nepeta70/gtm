@@ -7,11 +7,15 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
 {
     internal static class SwaggerExtensions
     {
+        internal const string JwtSecuritySchemeName = "bearer";
+        internal const string OAuth2SecuritySchemeName = "oauth2";
+
         private static string AssemblyName => Assembly.GetEntryAssembly().GetName().Name;
 
         private static string AssemblyVersion => Assembly.GetEntryAssembly().GetName().Version.ToString();
@@ -21,6 +25,8 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
             AppSettings settings,
             IConfiguration configuration)
         {
+            var securitySchemeName = ResolveSecuritySchemeName(configuration);
+
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(
                 options =>
@@ -34,38 +40,8 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
 
                     if (configuration.GetValue<string>("Swagger:EnableTryIt") == "Yes")
                     {
-                        // Define the OAuth2.0 scheme that's in use (i.e. Implicit Flow)
-                        options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-                        {
-                            Type = SecuritySchemeType.OAuth2,
-                            Name = "oauth2",
-                            Flows = configuration.GetValue<string>("Swagger:AuthFlow") == "AuthorizationCode"
-                                ? new OpenApiOAuthFlows
-                                {
-                                    AuthorizationCode = new OpenApiOAuthFlow
-                                    {
-                                        AuthorizationUrl = new Uri($"{settings.JwtAuthority}/connect/authorize"),
-                                        Scopes = new Dictionary<string, string>
-                                        {
-                                            ["estimate-public-scope"] = "estimate-api"
-                                        },
-                                        TokenUrl = new Uri($"{settings.JwtAuthority}/connect/token")
-                                    }
-                                }
-                                : new OpenApiOAuthFlows()
-                                {
-                                    ClientCredentials = new OpenApiOAuthFlow()
-                                    {
-                                        Scopes = new Dictionary<string, string>
-                                        {
-                                            ["estimate-public-scope"] = "estimate-api"
-                                        },
-                                        TokenUrl = new Uri($"{settings.JwtAuthority}/connect/token")
-                                    }
-                                }
-                        });
-
-                        options.OperationFilter<IdentityServerApiSecurityOperationFilter>();
+                        AddSecurityDefinition(options, securitySchemeName, settings, configuration);
+                        options.OperationFilter<IdentityServerApiSecurityOperationFilter>(securitySchemeName);
                     }
                 });
 
@@ -113,13 +89,79 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
                         options.SupportedSubmitMethods();
                     }
 
-                    options.OAuthClientId("client-gtestimate-swagger");
-                    options.OAuthClientSecret("gtmotive");
-                    options.OAuthScopeSeparator(" ");
-                    options.OAuthScopes("estimate-public-scope");
+                    if (ResolveSecuritySchemeName(configuration) == OAuth2SecuritySchemeName)
+                    {
+                        options.OAuthClientId("client-gtestimate-swagger");
+                        options.OAuthClientSecret("gtmotive");
+                        options.OAuthScopeSeparator(" ");
+                        options.OAuthScopes("estimate-public-scope");
+                    }
                 });
 
             return app;
+        }
+
+        private static string ResolveSecuritySchemeName(IConfiguration configuration)
+        {
+            var jwtSecret = configuration["Jwt:Secret"] ?? configuration["Jwt__Secret"];
+            var hasUserJwts = configuration.GetSection("Authentication:Schemes:Bearer").Exists();
+
+            return !string.IsNullOrWhiteSpace(jwtSecret) || hasUserJwts
+                ? JwtSecuritySchemeName
+                : OAuth2SecuritySchemeName;
+        }
+
+        private static void AddSecurityDefinition(
+            SwaggerGenOptions options,
+            string securitySchemeName,
+            AppSettings settings,
+            IConfiguration configuration)
+        {
+            if (securitySchemeName == JwtSecuritySchemeName)
+            {
+                options.AddSecurityDefinition(JwtSecuritySchemeName, new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Description = "Enter a JWT token",
+                });
+
+                return;
+            }
+
+            // Define the OAuth2.0 scheme that's in use (i.e. Implicit Flow)
+            options.AddSecurityDefinition(OAuth2SecuritySchemeName, new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.OAuth2,
+                Name = OAuth2SecuritySchemeName,
+                Flows = configuration.GetValue<string>("Swagger:AuthFlow") == "AuthorizationCode"
+                    ? new OpenApiOAuthFlows
+                    {
+                        AuthorizationCode = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = new Uri($"{settings.JwtAuthority}/connect/authorize"),
+                            Scopes = new Dictionary<string, string>
+                            {
+                                ["estimate-public-scope"] = "estimate-api"
+                            },
+                            TokenUrl = new Uri($"{settings.JwtAuthority}/connect/token")
+                        }
+                    }
+                    : new OpenApiOAuthFlows()
+                    {
+                        ClientCredentials = new OpenApiOAuthFlow()
+                        {
+                            Scopes = new Dictionary<string, string>
+                            {
+                                ["estimate-public-scope"] = "estimate-api"
+                            },
+                            TokenUrl = new Uri($"{settings.JwtAuthority}/connect/token")
+                        }
+                    }
+            });
         }
     }
 }
