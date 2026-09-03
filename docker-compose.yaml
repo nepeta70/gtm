@@ -18,15 +18,26 @@ services:
       - Bus__ConnectionString=Endpoint=sb://servicebus-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;
       - Bus__DefaultQueueOrTopicName=gtmotive-events
 
-      - AppSettings__JwtAuthority=https://identity.mygtmotive.com
-    
-      # JWT Bearer Authentication (Local Dev)
-      - Jwt__Secret=replace-with-a-long-random-development-secret
-      - Jwt__Issuer=gtmotive-estimate-api
-      - Jwt__Audience=gtmotive-estimate-clients
+      - AppSettings__JwtAuthority=http://host.docker.internal:5001
+
     depends_on:
       - mongo
       - servicebus-emulator
+      - identityserver
+    networks:
+      - gtmotive-network
+
+  identityserver:
+    build:
+      context: .
+      dockerfile: src/GtMotive.Estimate.IdentityServer/Dockerfile
+    container_name: gtmotive-identityserver
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=5001
+      - IdentityServer__IssuerUri=http://host.docker.internal:5001
     networks:
       - gtmotive-network
 

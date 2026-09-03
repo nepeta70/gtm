@@ -8,7 +8,7 @@ namespace GtMotive.Estimate.Microservice.Host.Infrastructure.Swagger
 {
     internal sealed class IdentityServerApiSecurityOperationFilter : IOperationFilter
     {
-        internal static readonly string[] OpenApiSecuritySchemesValues = ["estimate-api"];
+        internal static readonly string[] OpenApiSecuritySchemesValues = ["estimate-public-scope"];
 
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {

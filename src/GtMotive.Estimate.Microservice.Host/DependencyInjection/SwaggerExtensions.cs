@@ -116,6 +116,7 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
                     options.OAuthClientId("client-gtestimate-swagger");
                     options.OAuthClientSecret("gtmotive");
                     options.OAuthScopeSeparator(" ");
+                    options.OAuthScopes("estimate-public-scope");
                 });
 
             return app;

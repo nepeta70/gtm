@@ -26,7 +26,8 @@ src/
 ├── GtMotive.Estimate.Microservice.ApplicationCore # Use cases (application services)
 ├── GtMotive.Estimate.Microservice.Infrastructure    # MongoDB adapters, logging, telemetry, bus
 ├── GtMotive.Estimate.Microservice.Api               # Minimal API endpoints and presenters
-└── GtMotive.Estimate.Microservice.Host              # Composition root, Docker entry point
+├── GtMotive.Estimate.Microservice.Host              # Composition root, Docker entry point
+└── GtMotive.Estimate.IdentityServer                 # Dev/demo IdentityServer (Duende) for real JWT issuance
 
 test/
 ├── unit/            # Domain and use-case tests (mocked dependencies)
@@ -100,7 +101,7 @@ In Development, `appsettings.Development.json` does not include Mongo settings �
 
 ### Option 1 — Docker Compose (recommended)
 
-No external dependencies need to be installed on the host. Docker Compose starts the API and MongoDB:
+No external dependencies need to be installed on the host. Docker Compose starts the API, MongoDB, the Service Bus emulator and the IdentityServer:
 
 ```bash
 docker compose up --build
@@ -108,6 +109,7 @@ docker compose up --build
 
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger`
+- IdentityServer: `http://host.docker.internal:5001` (discovery: `/.well-known/openid-configuration`)
 - MongoDB: `localhost:27017`
 
 ### Option 2 — dotnet run
@@ -126,35 +128,70 @@ The Host project references `docker-compose.dcproj`, allowing Docker Compose to 
 
 | File | Purpose |
 |------|---------|
-| `src/GtMotive.Estimate.Microservice.Host/Dockerfile` | Multi-stage build on official `mcr.microsoft.com/dotnet` images (.NET 9) |
-| `docker-compose.yaml` | API + MongoDB 7.0 services |
+| `src/GtMotive.Estimate.Microservice.Host/Dockerfile` | Multi-stage build on official `mcr.microsoft.com/dotnet` images (.NET 10) |
+| `src/GtMotive.Estimate.IdentityServer/Dockerfile` | Multi-stage build for the demo IdentityServer |
+| `docker-compose.yaml` | API + IdentityServer + MongoDB 7.0 + Azure Service Bus emulator |
 | `docker-compose.dcproj` | Visual Studio Docker Compose integration |
 | `.dockerignore` | Excludes build artifacts, IDE files, and secrets from the image context |
 
-The container listens on port **8080** (`ASPNETCORE_URLS=http://+:8080`).
+The API container listens on port **8080** (`ASPNETCORE_URLS=http://+:8080`); the IdentityServer container listens on **5001**.
 
 ## Authentication (JWT)
 
-JWT bearer authentication is available but optional. When no secret is configured, the API runs
-without authentication in Development (or falls back to IdentityServer4 in other environments).
-To enable the dev-friendly HS256 JWT scheme, set the following environment variables (Docker
-Compose double-underscore convention, matching the `Jwt:Secret` / `Jwt:Issuer` / `Jwt:Audience`
-configuration keys):
+The API is a **resource server**: it only validates JWT access tokens. Token issuance is delegated
+to an identity provider, selected in `AddHostAuthentication` in this order:
+
+1. **Symmetric HS256 JWT** when `Jwt:Secret` is configured (lightweight local option).
+2. **IdentityServer (OIDC discovery + JWT validation)** when `AppSettings:JwtAuthority` points to a
+   real authority. This is the default in Docker Compose.
+3. **No scheme** (tests/local tooling set their own scheme) when neither is configured.
+
+### IdentityServer in Docker (default)
+
+Docker Compose starts `src/GtMotive.Estimate.IdentityServer`, a Duende IdentityServer with
+in-memory clients and test users, listening on `http://host.docker.internal:5001`. The issuer is
+fixed via `IdentityServer__IssuerUri` to `host.docker.internal`, which Docker Desktop resolves both
+from the host (browser/Swagger) and from inside the API container (back-channel), so the `iss`
+claim matches everywhere.
+
+Configuration lives in `src/GtMotive.Estimate.IdentityServer/appsettings.json` and
+`IdentityServerConfig.cs`:
+
+| Setting | Value |
+|---------|-------|
+| Swagger client | `client-gtestimate-swagger` / `gtmotive` (authorization code **and** client credentials) |
+| Scope | `estimate-public-scope` (API resource `estimate-api`) |
+| Test users | `admin` / `admin` (roles `Admin`, `User`) and `user` / `user` (role `User`) |
+
+Roles map to endpoint authorization policies: creating vehicles requires `Admin`; renting,
+returning and listing require an authenticated user (`User` for rent/return).
+
+**Try it from Swagger UI**: open `http://localhost:8080/swagger`, click *Authorize*, keep client id
+`client-gtestimate-swagger`, sign in as `admin`/`admin` on the IdentityServer login page.
+
+**Try it with curl (client credentials)**:
+
+```bash
+TOKEN=$(curl -s -X POST http://host.docker.internal:5001/connect/token \
+  -d grant_type=client_credentials \
+  -d client_id=client-gtestimate-swagger \
+  -d client_secret=gtmotive \
+  -d scope=estimate-public-scope | jq -r .access_token)
+
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/vehicles/available
+```
+
+### Alternative: symmetric HS256 JWT
+
+For quick local runs without the IdentityServer container, set the following environment variables
+(Docker Compose double-underscore convention, matching the `Jwt:Secret` / `Jwt:Issuer` /
+`Jwt:Audience` configuration keys) and remove `AppSettings__JwtAuthority`:
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
 | `Jwt__Secret` | Yes (enables JWT auth) | Symmetric key used to sign and validate HS256 tokens. Use a long random string; never reuse a real production secret locally. |
 | `Jwt__Issuer` | No | Expected `iss` claim. When omitted, issuer validation is skipped. |
 | `Jwt__Audience` | No | Expected `aud` claim. When omitted, audience validation is skipped. |
-
-Example additions to `docker-compose.yaml`'s `api` service (also present there, commented out):
-
-```yaml
-environment:
-  - Jwt__Secret=replace-with-a-long-random-development-secret
-  - Jwt__Issuer=gtmotive-estimate-api
-  - Jwt__Audience=gtmotive-estimate-clients
-```
 
 ### Minting a dev token
 
