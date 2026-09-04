@@ -7,7 +7,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 var issuerUri = builder.Configuration.GetValue<string>("IdentityServer:IssuerUri");
 
-builder.Services.AddCors();
+// Read allowed origins from appsettings.json
+var allowedCorsOrigins = builder.Configuration
+    .GetSection("IdentityServer:AllowedCorsOrigins")
+    .Get<string[]>() ?? [];
+
+// Add named CORS policy targeting allowed origins
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("IdentityServerCorsPolicy", policy =>
+    {
+        policy.WithOrigins(allowedCorsOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services
     .AddIdentityServer(options =>
@@ -27,6 +41,7 @@ builder.Services
     .AddDeveloperSigningCredential();
 
 var app = builder.Build();
+app.UseCors("IdentityServerCorsPolicy");
 
 app.UseIdentityServer();
 

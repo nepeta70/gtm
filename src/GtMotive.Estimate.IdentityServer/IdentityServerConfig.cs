@@ -56,8 +56,6 @@ namespace GtMotive.Estimate.IdentityServer
                     ClientName = "Estimate API Swagger UI",
                     ClientSecrets = { new Secret(swaggerClientSecret.Sha256()) },
 
-                    // Authorization code for interactive Swagger use, client credentials
-                    // for machine-to-machine calls (e.g. curl/Postman demos).
                     AllowedGrantTypes = GrantTypes.CodeAndClientCredentials,
                     RequirePkce = false,
 
@@ -72,8 +70,6 @@ namespace GtMotive.Estimate.IdentityServer
                         "estimate-public-scope",
                     },
 
-                    // Client credentials tokens carry both roles unprefixed so they can
-                    // call every protected endpoint (admin-like service account).
                     ClientClaimsPrefix = string.Empty,
                     Claims =
                     {
