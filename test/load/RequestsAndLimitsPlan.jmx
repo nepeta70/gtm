@@ -44,7 +44,7 @@ Connect to 5s</stringProp>
           <stringProp name="HTTPSampler.concurrentPool">4</stringProp>
           <stringProp name="HTTPSampler.proxyScheme">http</stringProp>
           <stringProp name="HTTPSampler.proxyHost">proxy.andrade.einsanet.es</stringProp>
-          <stringProp name="HTTPSampler.proxyPort">8080</stringProp>
+          <stringProp name="HTTPSampler.proxyPort">53573</stringProp>
           <stringProp name="HTTPSampler.proxyUser">sisproduccion</stringProp>
           <stringProp name="HTTPSampler.proxyPass">gumola0</stringProp>
           <stringProp name="HTTPSampler.connect_timeout">5000</stringProp>

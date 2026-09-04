@@ -1,7 +1,7 @@
+using System;
 using GtMotive.Estimate.Microservice.Host.Configuration;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
-using IdentityServer4.AccessTokenValidation;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,7 +11,9 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
     /// <summary>
     /// Wires up authentication for the Host. Prefers a Docker/dev-friendly symmetric JWT
     /// (see <see cref="JwtBearerAuthenticationExtensions"/>) when a Jwt:Secret is configured,
-    /// falling back to IdentityServer in environments where no secret is available.
+    /// falling back to an OpenID Connect identity provider (the docker-compose stack points
+    /// JwtAuthority to the bundled GtMotive.Estimate.IdentityServer container) whenever a real
+    /// authority is configured, and finally to a scheme-less setup for tests/local runs with neither.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal static class AuthenticationExtensions
@@ -23,23 +25,27 @@ namespace GtMotive.Estimate.Microservice.Host.DependencyInjection
                 return services;
             }
 
-            if (!environment.IsDevelopment())
+            var authority = appSettings?.JwtAuthority;
+            if (!string.IsNullOrWhiteSpace(authority) &&
+                !authority.StartsWith("Set by environment", StringComparison.OrdinalIgnoreCase))
             {
                 services.AddAuthentication(options =>
                 {
-                    options.DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
+                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
                 })
-                .AddIdentityServerAuthentication(options =>
+                .AddJwtBearer(options =>
                 {
-                    options.Authority = appSettings?.JwtAuthority;
-                    options.ApiName = "estimate-api";
-                    options.SupportedTokens = SupportedTokens.Jwt;
+                    options.Authority = authority;
+                    options.Audience = "estimate-api";
+
+                    // The bundled IdentityServer container serves plain HTTP.
+                    options.RequireHttpsMetadata = !environment.IsDevelopment();
                 });
 
                 return services;
             }
 
-            // Development/Test without a Jwt secret: leave authentication to callers
+            // Development/Test without a Jwt secret or authority: leave authentication to callers
             // (tests use TestServerDefaults scheme; no protected endpoints require a real scheme locally).
             services.AddAuthentication();
             return services;
