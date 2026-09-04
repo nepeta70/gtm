@@ -33,7 +33,7 @@ namespace GtMotive.Estimate.Microservice.Host.Infrastructure.Swagger
                 new OpenApiSecurityRequirement
                 {
                     {
-                        new OpenApiSecuritySchemeReference(securitySchemeName),
+                        new OpenApiSecuritySchemeReference(securitySchemeName, context.Document),
                         OpenApiSecuritySchemesValues.ToList()
                     }
                 }
