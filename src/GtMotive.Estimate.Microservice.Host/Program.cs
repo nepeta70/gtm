@@ -22,10 +22,8 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
 var builder = WebApplication.CreateBuilder();
-
 builder.Configuration.AddJsonFile("serilogsettings.json", optional: false, reloadOnChange: true);
 
-// Configuration.
 if (!builder.Environment.IsDevelopment())
 {
     var secretClient = new SecretClient(
@@ -35,9 +33,7 @@ if (!builder.Environment.IsDevelopment())
     builder.Configuration.AddAzureKeyVault(secretClient, new KeyVaultSecretManager());
 }
 
-// Logging configuration for host bootstrapping.
 builder.Logging.ClearProviders();
-
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}",
@@ -46,14 +42,13 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Add services to the container.
 if (!builder.Environment.IsDevelopment())
 {
     builder.Services.AddApplicationInsightsTelemetry(builder.Configuration);
     builder.Services.AddApplicationInsightsKubernetesEnricher();
 }
 
-builder.Services.AddControllers();
+// Minimal API OpenAPI Explorer & Core Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHealthChecks();
 builder.Services.AddApiResilience();
@@ -61,11 +56,11 @@ builder.Services.AddApiResilience();
 var appSettingsSection = builder.Configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
 var appSettings = appSettingsSection.Get<AppSettings>();
+
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
 builder.Services.Configure<BusSettings>(builder.Configuration.GetSection("Bus"));
-builder.Services.AddControllers(ApiConfiguration.ConfigureControllers)
-    .WithApiControllers();
 
+builder.Services.AddApiDependencies();
 builder.Services.AddBaseInfrastructure(builder.Environment.IsDevelopment());
 builder.Services.AddHostAuthentication(builder.Configuration, builder.Environment, appSettings);
 
@@ -73,10 +68,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor |
                                ForwardedHeaders.XForwardedProto;
-
-    // Only loopback proxies are allowed by default.
-    // Clear that restriction because forwarders are enabled by explicit
-    // configuration.
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -85,7 +76,6 @@ builder.Services.AddSwagger(appSettings, builder.Configuration);
 
 var app = builder.Build();
 
-// Logging configuration.
 Log.Logger = builder.Environment.IsDevelopment() ?
     new LoggerConfiguration()
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -108,7 +98,6 @@ Log.Logger = builder.Environment.IsDevelopment() ?
         .CreateLogger();
 
 var pathBase = new PathBase(builder.Configuration.GetValue("PathBase", defaultValue: PathBase.DefaultPathBase));
-
 if (!pathBase.IsDefault)
 {
     app.UsePathBase(pathBase.CurrentWithoutTrailingSlash);
@@ -125,9 +114,12 @@ app.UseSwaggerInApplication(pathBase, builder.Configuration);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseApiResilience();
-app.UseRouting();
+
+// Standard Auth Pipeline (UseRouting is implicitly handled before Map* calls)
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Endpoint Mapping
 app.MapVehicles();
 app.MapHealth();
 

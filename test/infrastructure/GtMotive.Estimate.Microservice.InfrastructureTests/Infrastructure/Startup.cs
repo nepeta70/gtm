@@ -42,11 +42,9 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             services.Configure<MongoDbSettings>(Configuration.GetSection("MongoDb"));
             services.AddAuthentication(TestServerDefaults.AuthenticationScheme)
                 .AddTestServer();
-            services.AddControllers(ApiConfiguration.ConfigureControllers)
-                .WithApiControllers();
             services.AddBaseInfrastructure(true);
             services.AddKeyedScoped<IBus, InMemoryBus>(BusNames.InMemory);
-
+            services.AddApiDependencies();
             services.AddAuthorization();
             services.TryAddJwtBearerAuthentication(Configuration, requireHttpsMetadata: false);
 
