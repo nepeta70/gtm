@@ -4,7 +4,13 @@ using System.Reflection;
 using GtMotive.Estimate.Microservice.Api.Authorization;
 using GtMotive.Estimate.Microservice.Api.DependencyInjection;
 using GtMotive.Estimate.Microservice.Api.Filters;
+using GtMotive.Estimate.Microservice.Api.UseCases;
 using GtMotive.Estimate.Microservice.ApplicationCore;
+using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models;
+using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles.Models;
+using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
+using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,11 +42,19 @@ namespace GtMotive.Estimate.Microservice.Api
         public static void AddApiDependencies(this IServiceCollection services)
         {
             services.AddAuthorization(AuthorizationOptionsExtensions.Configure);
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ApiConfiguration).GetTypeInfo().Assembly));
-            services.AddUseCases();
-            services.AddPresenters();
-            services.AddExceptionHandler<BusinessExceptionHandler>();
-            services.AddProblemDetails();
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(UseCaseRequest<>).Assembly);
+            });
+            services.AddTransient<IRequestHandler<UseCaseRequest<CreateVehicleInput>>, UseCaseRequestHandler<CreateVehicleInput>>();
+            services.AddTransient<IRequestHandler<UseCaseRequest<ListAvailableVehiclesInput>>, UseCaseRequestHandler<ListAvailableVehiclesInput>>();
+            services.AddTransient<IRequestHandler<UseCaseRequest<RentVehicleInput>>, UseCaseRequestHandler<RentVehicleInput>>();
+            services.AddTransient<IRequestHandler<UseCaseRequest<ReturnVehicleInput>>, UseCaseRequestHandler<ReturnVehicleInput>>();
+
+            services.AddUseCases()
+                .AddPresenters();
+            services.AddExceptionHandler<BusinessExceptionHandler>()
+                .AddProblemDetails();
         }
     }
 }
