@@ -16,10 +16,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Acheve.TestHost 3.3.0 transitively pins Microsoft.AspNetCore.TestHost to 6.0.5,
-             whose ResponseBodyPipeWriter does not implement PipeWriter.UnflushedBytes and is
-             incompatible with the minimal API JSON serialization fast path on .NET 9.
-             Reference it explicitly so the centrally managed version wins over the transitive one. -->
         <PackageReference Include="Acheve.TestHost" />
         <PackageReference Include="Microsoft.AspNetCore.TestHost" />
         <PackageReference Include="Microsoft.Extensions.Configuration" />

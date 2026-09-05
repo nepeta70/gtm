@@ -58,7 +58,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         [Fact]
         public async Task ExecuteWhenVehicleDoesNotExistCallsNotFoundHandle()
         {
-            var input = new ReturnVehicleInput(Guid.NewGuid());
+            var input = new ReturnVehicleInput(Guid.NewGuid(), "renter-3");
 
             _vehicleRepository
                 .Setup(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None))
@@ -88,7 +88,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
             vehicle.Rent("renter-1");
 
-            var input = new ReturnVehicleInput(vehicle.Id);
+            var input = new ReturnVehicleInput(vehicle.Id, "renter-1");
 
             _vehicleRepository
                 .Setup(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None))
@@ -160,7 +160,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
             vehicle.Rent("renter-1");
 
-            var input = new ReturnVehicleInput(vehicle.Id);
+            var input = new ReturnVehicleInput(vehicle.Id, "renter-1");
 
             _vehicleRepository
                 .Setup(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None))

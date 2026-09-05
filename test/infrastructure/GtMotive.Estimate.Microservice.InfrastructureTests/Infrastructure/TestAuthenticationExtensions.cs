@@ -16,10 +16,14 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(roles);
 
-            var claims = new List<Claim>();
+            var claims = new List<Claim>
+            {
+                new("sub", "test-renter"),
+                new(ClaimTypes.NameIdentifier, "test-renter")
+            };
             foreach (var role in roles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                claims.Add(new(ClaimTypes.Role, role));
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtTestServerFixture.Secret));

@@ -115,11 +115,9 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseApiResilience();
 
-// Standard Auth Pipeline (UseRouting is implicitly handled before Map* calls)
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Endpoint Mapping
 app.MapVehicles();
 app.MapHealth();
 

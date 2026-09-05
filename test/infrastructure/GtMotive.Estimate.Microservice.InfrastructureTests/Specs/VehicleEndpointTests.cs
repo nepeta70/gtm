@@ -76,7 +76,8 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Specs
 
             var vehicleId = await createResp.Content.ReadFromJsonAsync<Guid>();
 
-            using var rentResp = await client.PostAsJsonAsync($"/api/vehicles/{vehicleId}/rent", new { RenterId = "renter-100" });
+            // No longer sending RenterId in the body. It comes from the JWT claims.
+            using var rentResp = await client.PostAsJsonAsync($"/api/vehicles/{vehicleId}/rent", new { });
             rentResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
             using var returnResp = await client.PostAsJsonAsync($"/api/vehicles/{vehicleId}/return", new { });
@@ -108,6 +109,7 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Specs
         [Fact]
         public async Task SamePersonCannotRentMoreThanOneVehicleReturnsBadRequest()
         {
+            // Both requests will use the same authenticated client, meaning the same renterId (from token).
             using var client = CreateAuthenticatedClient();
 
             var plate1 = $"R1-{Guid.NewGuid():N}"[..12];
@@ -124,18 +126,56 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Specs
             c2.StatusCode.Should().Be(HttpStatusCode.Created);
             var id2 = await c2.Content.ReadFromJsonAsync<Guid>();
 
-            using var rent1 = await client.PostAsJsonAsync($"/api/vehicles/{id1}/rent", new { RenterId = "same-renter" });
+            using var rent1 = await client.PostAsJsonAsync($"/api/vehicles/{id1}/rent", new { });
             rent1.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            using var rent2 = await client.PostAsJsonAsync($"/api/vehicles/{id2}/rent", new { RenterId = "same-renter" });
+            // Should fail because the user (renterId from token) already rented id1.
+            using var rent2 = await client.PostAsJsonAsync($"/api/vehicles/{id2}/rent", new { });
             rent2.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
-        private HttpClient CreateAuthenticatedClient()
+        [Fact]
+        public async Task PostVehiclesWithoutTokenReturnsUnauthorized()
         {
-            // No longer needs IConfiguration. Just pass the roles.
-            return Fixture.Server.CreateClient()
-                .WithTestToken(AuthorizationRoles.Admin, AuthorizationRoles.User);
+            using var client = CreateUnauthenticatedClient();
+
+            var request = new
+            {
+                Brand = "Toyota",
+                Model = "Corolla",
+                LicensePlate = $"TEST-{Guid.NewGuid():N}"[..12],
+                ManufactureDate = DateTime.UtcNow.AddYears(-1)
+            };
+
+            using var response = await client.PostAsJsonAsync("/api/vehicles", request);
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
+
+        [Fact]
+        public async Task RentVehicleWithoutTokenReturnsUnauthorized()
+        {
+            using var client = CreateUnauthenticatedClient();
+            var vehicleId = Guid.NewGuid();
+
+            using var response = await client.PostAsJsonAsync($"/api/vehicles/{vehicleId}/rent", new { });
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        [Fact]
+        public async Task ListAvailableVehiclesWithoutTokenReturnsUnauthorized()
+        {
+            using var client = CreateUnauthenticatedClient();
+
+            using var response = await client.GetAsync(new Uri("/api/vehicles/available", UriKind.Relative));
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        private HttpClient CreateAuthenticatedClient() => Fixture.Server.CreateClient()
+                .WithTestToken(AuthorizationRoles.Admin, AuthorizationRoles.User);
+
+        private HttpClient CreateUnauthenticatedClient() => Fixture.Server.CreateClient();
     }
 }

@@ -91,8 +91,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Persistence
                 .ExecuteAsync(
                     static async (session, ct) => await session.CommitTransactionAsync(ct).ConfigureAwait(false),
                     _session,
-                    CancellationToken.None)
-                .ConfigureAwait(false);
+                    CancellationToken.None);
 
             _logger.LogInformation("MongoDB transaction committed.");
 
