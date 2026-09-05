@@ -46,8 +46,8 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
                 input.LicensePlate,
                 input.ManufactureDate);
 
-            await vehicleRepository.AddAsync(vehicle, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.Save().ConfigureAwait(false);
+            await vehicleRepository.AddAsync(vehicle, cancellationToken);
+            await unitOfWork.Save();
 
             var vehicleCreatedEvent = new VehicleCreatedEvent(
                 vehicle.Id,
@@ -64,7 +64,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
 
             telemetry.TrackMetric(nameof(VehicleCreatedEvent), 1);
 
-            await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent).ConfigureAwait(false);
+            await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully created", vehicle.Id);
 

@@ -66,9 +66,8 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Bus
             // IBus.Send exposes no cancellation token; the pipeline's timeout still applies.
             await _resiliencePipeline
                 .ExecuteAsync(
-                    async ct => await _sender.SendMessageAsync(serviceBusMessage, ct).ConfigureAwait(false),
-                    CancellationToken.None)
-                .ConfigureAwait(false);
+                    async ct => await _sender.SendMessageAsync(serviceBusMessage, ct),
+                    CancellationToken.None);
 
             _logger.LogInformation(
                 "Azure Service Bus sent message {MessageType} to {EntityPath}",
@@ -86,8 +85,8 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Bus
 
             _disposed = true;
 
-            await _sender.DisposeAsync().ConfigureAwait(false);
-            await _client.DisposeAsync().ConfigureAwait(false);
+            await _sender.DisposeAsync();
+            await _client.DisposeAsync();
         }
     }
 }

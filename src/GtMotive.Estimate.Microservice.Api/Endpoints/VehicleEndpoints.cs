@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using GtMotive.Estimate.Microservice.Api.Authorization;
+using GtMotive.Estimate.Microservice.Api.Extensions;
 using GtMotive.Estimate.Microservice.Api.Resilience;
 using GtMotive.Estimate.Microservice.Api.UseCases;
 using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
@@ -65,12 +66,19 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
             group.MapPost("{id:guid}/rent", async (
                 Guid id,
-                RentVehicleRequest request,
                 IMediator mediator,
                 RentVehiclePresenter presenter,
+                HttpContext httpContext,
                 CancellationToken ct) =>
             {
-                var input = new RentVehicleInput(id, request.RenterId);
+                var renterId = httpContext.User.GetUserId();
+
+                if (string.IsNullOrEmpty(renterId))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var input = new RentVehicleInput(id, renterId);
 
                 await mediator.SendUseCase(input, ct);
 
@@ -87,9 +95,17 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
                 Guid id,
                 IMediator mediator,
                 ReturnVehiclePresenter presenter,
+                HttpContext httpContext,
                 CancellationToken ct) =>
             {
-                var input = new ReturnVehicleInput(id);
+                var renterId = httpContext.User.GetUserId();
+
+                if (string.IsNullOrEmpty(renterId))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var input = new ReturnVehicleInput(id, renterId);
 
                 await mediator.SendUseCase(input, ct);
 

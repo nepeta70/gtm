@@ -42,7 +42,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
 
             logger.LogInformation("Attempting to rent vehicle {VehicleId} to renter {RenterId}", input.VehicleId, input.RenterId);
 
-            var vehicle = await vehicleRepository.GetByIdAsync(input.VehicleId, cancellationToken).ConfigureAwait(false);
+            var vehicle = await vehicleRepository.GetByIdAsync(input.VehicleId, cancellationToken);
 
             if (vehicle is null)
             {
@@ -51,7 +51,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
                 return;
             }
 
-            var renterHasActiveRental = await vehicleReadRepository.HasActiveRentalAsync(input.RenterId, cancellationToken).ConfigureAwait(false);
+            var renterHasActiveRental = await vehicleReadRepository.HasActiveRentalAsync(input.RenterId, cancellationToken);
 
             if (renterHasActiveRental)
             {
@@ -61,8 +61,8 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
 
             vehicle.Rent(input.RenterId);
 
-            await vehicleRepository.UpdateAsync(vehicle, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.Save().ConfigureAwait(false);
+            await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
+            await unitOfWork.Save();
 
             var vehicleRentedEvent = new VehicleRentedEvent(
                 vehicle.Id,
@@ -79,7 +79,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
 
             telemetry.TrackMetric(nameof(VehicleRentedEvent), 1);
 
-            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent).ConfigureAwait(false);
+            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully rented to {RenterId}", vehicle.Id, vehicle.RenterId);
 

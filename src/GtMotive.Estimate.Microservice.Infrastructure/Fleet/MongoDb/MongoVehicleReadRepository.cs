@@ -41,8 +41,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                             d.ManufactureDate))
                         .ToListAsync(ct)
                         .ConfigureAwait(false),
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
 
             logger.LogInformation("Found {Count} available vehicles", cursor.Count);
 
@@ -59,8 +58,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                         .Find(d => d.Status == VehicleStatus.Rented && d.RenterId == renterId)
                         .CountDocumentsAsync(ct)
                         .ConfigureAwait(false),
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
 
             var hasActiveRental = count > 0;
 

@@ -23,7 +23,7 @@ namespace GtMotive.Estimate.Microservice.Api.UseCases
         public async Task Handle(UseCaseRequest<TInput> request, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            await _useCase.Execute(request.Input, cancellationToken).ConfigureAwait(false);
+            await _useCase.Execute(request.Input, cancellationToken);
         }
     }
 }

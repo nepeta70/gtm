@@ -76,7 +76,7 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Specs
                 await rentUseCase.Execute(new RentVehicleInput(vehicleId, "renter-2"));
 
                 var returnUseCase = sp.GetRequiredService<IUseCase<ReturnVehicleInput>>();
-                await returnUseCase.Execute(new ReturnVehicleInput(vehicleId));
+                await returnUseCase.Execute(new ReturnVehicleInput(vehicleId, "renter-2"));
 
                 var listUseCase = sp.GetRequiredService<IUseCase<ListAvailableVehiclesInput>>();
                 var listPresenter = sp.GetRequiredService<ListAvailableVehiclesPresenter>();
@@ -84,6 +84,26 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Specs
 
                 var vehicles = GetOkValue<IEnumerable<AvailableVehicleDto>>(listPresenter.Result);
                 vehicles.Should().Contain(v => v.Id == vehicleId);
+            });
+        }
+
+        [Fact]
+        public async Task DifferentPersonCannotReturnVehicleRentedByAnotherRenter()
+        {
+            await Fixture.UsingScope(async sp =>
+            {
+                var createUseCase = sp.GetRequiredService<IUseCase<CreateVehicleInput>>();
+                var createPresenter = sp.GetRequiredService<CreateVehiclePresenter>();
+                await createUseCase.Execute(new CreateVehicleInput("Toyota", "Corolla", "DDD-444", DateTime.UtcNow.AddYears(-1)));
+                var vehicleId = GetOkValue<Guid>(createPresenter.Result);
+
+                var rentUseCase = sp.GetRequiredService<IUseCase<RentVehicleInput>>();
+                await rentUseCase.Execute(new RentVehicleInput(vehicleId, "renter-original"));
+
+                var returnUseCase = sp.GetRequiredService<IUseCase<ReturnVehicleInput>>();
+                Func<Task> returnByDifferentRenter = () => returnUseCase.Execute(new ReturnVehicleInput(vehicleId, "renter-different"));
+
+                await returnByDifferentRenter.Should().ThrowAsync<DomainException>();
             });
         }
 

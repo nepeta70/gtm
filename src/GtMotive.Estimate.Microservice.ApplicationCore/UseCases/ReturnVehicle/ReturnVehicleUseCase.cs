@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Events;
+using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 
 namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
@@ -38,7 +39,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
 
             logger.LogInformation("Attempting to return vehicle {VehicleId}", input.VehicleId);
 
-            var vehicle = await vehicleRepository.GetByIdAsync(input.VehicleId, cancellationToken).ConfigureAwait(false);
+            var vehicle = await vehicleRepository.GetByIdAsync(input.VehicleId, cancellationToken);
 
             if (vehicle is null)
             {
@@ -47,10 +48,16 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
                 return;
             }
 
+            if (vehicle.RenterId != input.RenterId)
+            {
+                logger.LogWarning("Vehicle {VehicleId} is not currently rented by {RenterId}", input.VehicleId, input.RenterId);
+                throw new DomainException($"Renter '{input.RenterId}' is not the current renter of vehicle '{input.VehicleId}'.");
+            }
+
             vehicle.Return();
 
-            await vehicleRepository.UpdateAsync(vehicle, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.Save().ConfigureAwait(false);
+            await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
+            await unitOfWork.Save();
 
             var vehicleReturnedEvent = new VehicleReturnedEvent(
                 vehicle.Id,
@@ -65,7 +72,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
 
             telemetry.TrackMetric(nameof(VehicleReturnedEvent), 1);
 
-            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent).ConfigureAwait(false);
+            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully returned", vehicle.Id);
 

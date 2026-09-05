@@ -76,18 +76,15 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                             if (session is not null && session.IsInTransaction)
                             {
                                 await _collection
-                                    .InsertOneAsync(session, document, cancellationToken: ct)
-                                    .ConfigureAwait(false);
+                                    .InsertOneAsync(session, document, cancellationToken: ct);
                             }
                             else
                             {
                                 await _collection
-                                    .InsertOneAsync(document, cancellationToken: ct)
-                                    .ConfigureAwait(false);
+                                    .InsertOneAsync(document, cancellationToken: ct);
                             }
                         },
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                        cancellationToken);
             }
             catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
             {
@@ -117,18 +114,15 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                             if (session is not null && session.IsInTransaction)
                             {
                                 await _collection
-                                    .ReplaceOneAsync(session, d => d.Id == vehicle.Id, document, cancellationToken: ct)
-                                    .ConfigureAwait(false);
+                                    .ReplaceOneAsync(session, d => d.Id == vehicle.Id, document, cancellationToken: ct);
                             }
                             else
                             {
                                 await _collection
-                                    .ReplaceOneAsync(d => d.Id == vehicle.Id, document, cancellationToken: ct)
-                                    .ConfigureAwait(false);
+                                    .ReplaceOneAsync(d => d.Id == vehicle.Id, document, cancellationToken: ct);
                             }
                         },
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                        cancellationToken);
             }
             catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000)
             {
@@ -152,8 +146,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                         .Find(d => d.Id == id)
                         .FirstOrDefaultAsync(ct)
                         .ConfigureAwait(false),
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
 
             if (document is null)
             {

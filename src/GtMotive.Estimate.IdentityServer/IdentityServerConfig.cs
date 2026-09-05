@@ -75,6 +75,7 @@ namespace GtMotive.Estimate.IdentityServer
                     {
                         new ClientClaim("role", "Admin"),
                         new ClientClaim("role", "User"),
+                        new ClientClaim("sub", "swagger-test-client")
                     },
                 },
             ];

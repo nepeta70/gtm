@@ -28,7 +28,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableV
         {
             ArgumentNullException.ThrowIfNull(input);
 
-            var vehicles = await _vehicleRepository.GetAvailableAsync(cancellationToken).ConfigureAwait(false);
+            var vehicles = await _vehicleRepository.GetAvailableAsync(cancellationToken);
 
             var dtos = vehicles
                 .Select(v => new AvailableVehicleDto(v.Id, v.Brand, v.Model, v.LicensePlate, v.ManufactureDate))
