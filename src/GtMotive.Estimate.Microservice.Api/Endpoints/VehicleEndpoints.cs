@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using GtMotive.Estimate.Microservice.Api.Authorization;
 using GtMotive.Estimate.Microservice.Api.Resilience;
+using GtMotive.Estimate.Microservice.Api.UseCases;
 using GtMotive.Estimate.Microservice.Api.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ListAvailableVehicles;
 using GtMotive.Estimate.Microservice.Api.UseCases.RentVehicle;
 using GtMotive.Estimate.Microservice.Api.UseCases.ReturnVehicle;
-using GtMotive.Estimate.Microservice.ApplicationCore.UseCases;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableVehicles.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -29,7 +30,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
             group.MapPost(string.Empty, async (
                 CreateVehicleRequest request,
-                IUseCase<CreateVehicleInput> useCase,
+                IMediator mediator,
                 CreateVehiclePresenter presenter,
                 CancellationToken ct) =>
             {
@@ -39,7 +40,7 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
                     request.LicensePlate,
                     request.ManufactureDate);
 
-                await useCase.Execute(input, ct);
+                await mediator.SendUseCase(input, ct);
 
                 return presenter.Result;
             })
@@ -50,11 +51,11 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
             group.MapGet("available", async (
-                IUseCase<ListAvailableVehiclesInput> useCase,
+                IMediator mediator,
                 ListAvailableVehiclesPresenter presenter,
                 CancellationToken ct) =>
             {
-                await useCase.Execute(new ListAvailableVehiclesInput(), ct);
+                await mediator.SendUseCase(new ListAvailableVehiclesInput(), ct);
 
                 return presenter.Result;
             })
@@ -65,13 +66,13 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
             group.MapPost("{id:guid}/rent", async (
                 Guid id,
                 RentVehicleRequest request,
-                IUseCase<RentVehicleInput> useCase,
+                IMediator mediator,
                 RentVehiclePresenter presenter,
                 CancellationToken ct) =>
             {
                 var input = new RentVehicleInput(id, request.RenterId);
 
-                await useCase.Execute(input, ct);
+                await mediator.SendUseCase(input, ct);
 
                 return presenter.Result;
             })
@@ -84,13 +85,13 @@ namespace GtMotive.Estimate.Microservice.Api.Endpoints
 
             group.MapPost("{id:guid}/return", async (
                 Guid id,
-                IUseCase<ReturnVehicleInput> useCase,
+                IMediator mediator,
                 ReturnVehiclePresenter presenter,
                 CancellationToken ct) =>
             {
                 var input = new ReturnVehicleInput(id);
 
-                await useCase.Execute(input, ct);
+                await mediator.SendUseCase(input, ct);
 
                 return presenter.Result;
             })
