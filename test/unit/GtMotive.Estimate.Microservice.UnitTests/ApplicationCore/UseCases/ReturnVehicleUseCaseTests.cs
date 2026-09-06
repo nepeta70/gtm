@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -23,7 +22,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<IReturnVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<ReturnVehicleUseCase>> _logger = new();
-        private readonly Mock<ITelemetry> _telemetry = new(MockBehavior.Strict);
         private readonly Mock<IBusFactory> _busFactory = new(MockBehavior.Strict);
         private readonly Mock<IBus> _bus = new(MockBehavior.Strict);
 
@@ -79,7 +77,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         }
 
         /// <summary>
-        /// Verifies that executing the use case with an existing rented vehicle successfully returns the vehicle, updates persistence, emits telemetry, sends the domain event, and notifies the output port.
+        /// Verifies that executing the use case with an existing rented vehicle successfully returns the vehicle, updates persistence, sends the domain event, and notifies the output port.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous unit test execution.</returns>
         [Fact]
@@ -104,18 +102,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Setup(u => u.Save())
                 .ReturnsAsync(1);
 
-            _telemetry
-                .Setup(t => t.TrackEvent(
-                    nameof(VehicleReturnedEvent),
-                    It.Is<IDictionary<string, string>>(d =>
-                        d[nameof(VehicleReturnedEvent.VehicleId)] == vehicle.Id.ToString()),
-                    null))
-                .Verifiable();
-
-            _telemetry
-                .Setup(t => t.TrackMetric(nameof(VehicleReturnedEvent), 1, null))
-                .Verifiable();
-
             _bus
                 .Setup(b => b.Send(
                     It.Is<VehicleReturnedEvent>(e =>
@@ -137,13 +123,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(), Times.Once);
-            _telemetry.Verify(
-                t => t.TrackEvent(
-                    nameof(VehicleReturnedEvent),
-                    It.IsAny<IDictionary<string, string>>(),
-                    null),
-                Times.Once);
-            _telemetry.Verify(t => t.TrackMetric(nameof(VehicleReturnedEvent), 1, null), Times.Once);
             _bus.Verify(b => b.Send(It.IsAny<VehicleReturnedEvent>()), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<ReturnVehicleOutput>()), Times.Once);
 
@@ -151,7 +130,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         }
 
         /// <summary>
-        /// Verifies that when unit of work save fails, telemetry, bus message, and output port operations are skipped.
+        /// Verifies that when unit of work save fails, bus message and output port operations are skipped.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous unit test execution.</returns>
         [Fact]
@@ -193,7 +172,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 _unitOfWork.Object,
                 _outputPort.Object,
                 _logger.Object,
-                _telemetry.Object,
                 _busFactory.Object);
 
         private void VerifyNoOtherCalls()
@@ -201,7 +179,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleRepository.VerifyNoOtherCalls();
             _unitOfWork.VerifyNoOtherCalls();
             _outputPort.VerifyNoOtherCalls();
-            _telemetry.VerifyNoOtherCalls();
             _busFactory.VerifyNoOtherCalls();
             _bus.VerifyNoOtherCalls();
         }

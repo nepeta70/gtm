@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
@@ -19,7 +18,6 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
     /// <param name="unitOfWork">The unit of work port for transaction boundary management.</param>
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
     /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
     public sealed class RentVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
@@ -27,7 +25,6 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
         IUnitOfWork unitOfWork,
         IRentVehicleOutputPort outputPort,
         IAppLogger<RentVehicleUseCase> logger,
-        ITelemetry telemetry,
         IBusFactory busFactory) : IUseCase<RentVehicleInput>
     {
         /// <summary>
@@ -68,16 +65,6 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
                 vehicle.Id,
                 vehicle.RenterId,
                 vehicle.RentedAt.Value);
-
-            telemetry.TrackEvent(
-                nameof(VehicleRentedEvent),
-                new Dictionary<string, string>
-                {
-                    { nameof(vehicleRentedEvent.VehicleId), vehicleRentedEvent.VehicleId.ToString() },
-                    { nameof(vehicleRentedEvent.RenterId), vehicleRentedEvent.RenterId.ToString() }
-                });
-
-            telemetry.TrackMetric(nameof(VehicleRentedEvent), 1);
 
             await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent);
 

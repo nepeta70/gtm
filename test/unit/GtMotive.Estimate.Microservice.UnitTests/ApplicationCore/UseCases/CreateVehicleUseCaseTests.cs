@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -23,7 +22,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<ICreateVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<CreateVehicleUseCase>> _logger = new();
-        private readonly Mock<ITelemetry> _telemetry = new(MockBehavior.Strict);
         private readonly Mock<IBusFactory> _busFactory = new(MockBehavior.Strict);
         private readonly Mock<IBus> _bus = new(MockBehavior.Strict);
 
@@ -52,7 +50,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         }
 
         /// <summary>
-        /// Verifies that executing the use case with valid input persists the vehicle, emits telemetry, sends the domain event, and notifies the output port.
+        /// Verifies that executing the use case with valid input persists the vehicle, sends the domain event, and notifies the output port.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous unit test execution.</returns>
         [Fact]
@@ -62,32 +60,19 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             var input = new CreateVehicleInput("Toyota", "Corolla", "1234ABC", manufactureDate);
 
             _vehicleRepository
-                            .Setup(r => r.AddAsync(
-                                It.Is<Vehicle>(v =>
-                                    v.Brand == input.Brand &&
-                                    v.Model == input.Model &&
-                                    v.LicensePlate.Value == input.LicensePlate &&
-                                    v.ManufactureDate == input.ManufactureDate &&
-                                    v.Id != Guid.Empty),
-                                CancellationToken.None))
-                            .Returns(Task.CompletedTask);
+                .Setup(r => r.AddAsync(
+                    It.Is<Vehicle>(v =>
+                        v.Brand == input.Brand &&
+                        v.Model == input.Model &&
+                        v.LicensePlate.Value == input.LicensePlate &&
+                        v.ManufactureDate == input.ManufactureDate &&
+                        v.Id != Guid.Empty),
+                    CancellationToken.None))
+                .Returns(Task.CompletedTask);
 
             _unitOfWork
                 .Setup(u => u.Save())
                 .ReturnsAsync(1);
-
-            _telemetry
-                .Setup(t => t.TrackEvent(
-                    nameof(VehicleCreatedEvent),
-                    It.Is<IDictionary<string, string>>(d =>
-                        d[nameof(VehicleCreatedEvent.LicensePlate)] == input.LicensePlate &&
-                        d.ContainsKey(nameof(VehicleCreatedEvent.VehicleId))),
-                    null))
-                .Verifiable();
-
-            _telemetry
-                .Setup(t => t.TrackMetric(nameof(VehicleCreatedEvent), 1, null))
-                .Verifiable();
 
             _bus
                 .Setup(b => b.Send(
@@ -112,13 +97,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
 
             _vehicleRepository.Verify(r => r.AddAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(), Times.Once);
-            _telemetry.Verify(
-                t => t.TrackEvent(
-                    nameof(VehicleCreatedEvent),
-                    It.IsAny<IDictionary<string, string>>(),
-                    null),
-                Times.Once);
-            _telemetry.Verify(t => t.TrackMetric(nameof(VehicleCreatedEvent), 1, null), Times.Once);
             _bus.Verify(b => b.Send(It.IsAny<VehicleCreatedEvent>()), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<CreateVehicleOutput>()), Times.Once);
 
@@ -126,7 +104,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         }
 
         /// <summary>
-        /// Verifies that when unit of work save fails, telemetry, bus message, and output port operations are skipped.
+        /// Verifies that when unit of work save fails, bus message and output port operations are skipped.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous unit test execution.</returns>
         [Fact]
@@ -161,7 +139,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 _unitOfWork.Object,
                 _outputPort.Object,
                 _logger.Object,
-                _telemetry.Object,
                 _busFactory.Object);
 
         private void VerifyNoOtherCalls()
@@ -169,7 +146,6 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleRepository.VerifyNoOtherCalls();
             _unitOfWork.VerifyNoOtherCalls();
             _outputPort.VerifyNoOtherCalls();
-            _telemetry.VerifyNoOtherCalls();
             _busFactory.VerifyNoOtherCalls();
             _bus.VerifyNoOtherCalls();
         }

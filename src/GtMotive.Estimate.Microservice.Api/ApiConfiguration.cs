@@ -31,6 +31,11 @@ namespace GtMotive.Estimate.Microservice.Api
             services.AddTransient<IRequestHandler<UseCaseRequest<RentVehicleInput>>, UseCaseRequestHandler<RentVehicleInput>>();
             services.AddTransient<IRequestHandler<UseCaseRequest<ReturnVehicleInput>>, UseCaseRequestHandler<ReturnVehicleInput>>();
 
+            services.AddTransient<IPipelineBehavior<UseCaseRequest<CreateVehicleInput>, Unit>, UseCaseTelemetryBehavior<CreateVehicleInput>>();
+            services.AddTransient<IPipelineBehavior<UseCaseRequest<ListAvailableVehiclesInput>, Unit>, UseCaseTelemetryBehavior<ListAvailableVehiclesInput>>();
+            services.AddTransient<IPipelineBehavior<UseCaseRequest<RentVehicleInput>, Unit>, UseCaseTelemetryBehavior<RentVehicleInput>>();
+            services.AddTransient<IPipelineBehavior<UseCaseRequest<ReturnVehicleInput>, Unit>, UseCaseTelemetryBehavior<ReturnVehicleInput>>();
+
             services.AddUseCases()
                 .AddPresenters();
             services.AddExceptionHandler<BusinessExceptionHandler>()

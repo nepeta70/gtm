@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models;
@@ -17,14 +16,12 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
     /// <param name="unitOfWork">The unit of work port for transaction boundary management.</param>
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
     /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
     public sealed class CreateVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         ICreateVehicleOutputPort outputPort,
         IAppLogger<CreateVehicleUseCase> logger,
-        ITelemetry telemetry,
         IBusFactory busFactory) : IUseCase<CreateVehicleInput>
     {
         /// <summary>
@@ -53,16 +50,6 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
                 vehicle.Id,
                 vehicle.LicensePlate.Value,
                 DateTime.UtcNow);
-
-            telemetry.TrackEvent(
-                nameof(VehicleCreatedEvent),
-                new Dictionary<string, string>
-                {
-                    { nameof(vehicleCreatedEvent.VehicleId), vehicleCreatedEvent.VehicleId.ToString() },
-                    { nameof(vehicleCreatedEvent.LicensePlate), vehicleCreatedEvent.LicensePlate }
-                });
-
-            telemetry.TrackMetric(nameof(VehicleCreatedEvent), 1);
 
             await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent);
 
