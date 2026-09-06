@@ -53,7 +53,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
                 vehicle.Id,
                 DateTime.UtcNow);
 
-            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent);
+            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent, cancellationToken);
 
             logger.LogInformation("Vehicle {VehicleId} successfully returned", vehicle.Id);
 

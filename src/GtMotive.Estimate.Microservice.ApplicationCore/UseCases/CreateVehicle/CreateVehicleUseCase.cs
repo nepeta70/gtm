@@ -51,7 +51,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
                 vehicle.LicensePlate.Value,
                 DateTime.UtcNow);
 
-            await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent);
+            await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent, cancellationToken);
 
             logger.LogInformation("Vehicle {VehicleId} successfully created", vehicle.Id);
 

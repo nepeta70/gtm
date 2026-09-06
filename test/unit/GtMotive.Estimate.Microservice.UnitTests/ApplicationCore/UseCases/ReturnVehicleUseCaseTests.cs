@@ -106,7 +106,8 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Setup(b => b.Send(
                     It.Is<VehicleReturnedEvent>(e =>
                         e.VehicleId == vehicle.Id &&
-                        e.ReturnedAt != default)))
+                        e.ReturnedAt != default),
+                    CancellationToken.None))
                 .Returns(Task.CompletedTask);
 
             _outputPort
@@ -123,7 +124,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(), Times.Once);
-            _bus.Verify(b => b.Send(It.IsAny<VehicleReturnedEvent>()), Times.Once);
+            _bus.Verify(b => b.Send(It.IsAny<VehicleReturnedEvent>(), CancellationToken.None), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<ReturnVehicleOutput>()), Times.Once);
 
             VerifyNoOtherCalls();

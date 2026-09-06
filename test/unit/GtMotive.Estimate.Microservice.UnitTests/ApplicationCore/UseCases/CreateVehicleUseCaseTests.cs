@@ -79,7 +79,8 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                     It.Is<VehicleCreatedEvent>(e =>
                         e.LicensePlate == input.LicensePlate &&
                         e.VehicleId != Guid.Empty &&
-                        e.CreatedOn != default)))
+                        e.CreatedOn != default),
+                    CancellationToken.None))
                 .Returns(Task.CompletedTask);
 
             _outputPort
@@ -97,7 +98,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
 
             _vehicleRepository.Verify(r => r.AddAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(), Times.Once);
-            _bus.Verify(b => b.Send(It.IsAny<VehicleCreatedEvent>()), Times.Once);
+            _bus.Verify(b => b.Send(It.IsAny<VehicleCreatedEvent>(), CancellationToken.None), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<CreateVehicleOutput>()), Times.Once);
 
             VerifyNoOtherCalls();

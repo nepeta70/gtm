@@ -66,7 +66,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
                 vehicle.RenterId,
                 vehicle.RentedAt.Value);
 
-            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent);
+            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent, cancellationToken);
 
             logger.LogInformation("Vehicle {VehicleId} successfully rented to {RenterId}", vehicle.Id, vehicle.RenterId);
 

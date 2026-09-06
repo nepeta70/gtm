@@ -141,7 +141,8 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                     It.Is<VehicleRentedEvent>(e =>
                         e.VehicleId == vehicle.Id &&
                         e.RenterId == input.RenterId &&
-                        e.RentedAt != default)))
+                        e.RentedAt != default),
+                    CancellationToken.None))
                 .Returns(Task.CompletedTask);
 
             _outputPort
@@ -161,7 +162,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleReadRepository.Verify(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(), Times.Once);
-            _bus.Verify(b => b.Send(It.IsAny<VehicleRentedEvent>()), Times.Once);
+            _bus.Verify(b => b.Send(It.IsAny<VehicleRentedEvent>(), CancellationToken.None), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<RentVehicleOutput>()), Times.Once);
 
             VerifyNoOtherCalls();
