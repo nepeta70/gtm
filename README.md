@@ -115,7 +115,7 @@ Each use case collects at most one domain event per request in `IDomainEventEnve
 
 ### Bus providers
 
-`IBusFactory` resolves the active `IBus` implementation from the `Bus:Provider` configuration value (`BusNames.NoOp`, `BusNames.InMemory`, `BusNames.Azure`):
+`IBusFactory` resolves the active `IBus` implementation from the `Bus:Provider` configuration value (`BusNames.InMemory`, `BusNames.Azure`):
 
 | Provider | Implementation | Use |
 |----------|-----------------|-----|
@@ -341,4 +341,4 @@ Every use case runs inside two MediatR pipeline behaviors (`UseCaseTelemetryBeha
 | Run locally without external deps | Satisfied via Docker Compose |
 | Dockerization + Visual Studio support | Implemented |
 | Resilience (retries, circuit breaker, timeouts, rate limiting) | Implemented (Polly pipelines, request timeouts, endpoint rate limiting) |
-| Domain event outbox / messaging | Implemented (event store + configurable bus: NoOp / InMemory / Azure Service Bus) |
+| Domain event outbox / messaging | Implemented (event store + configurable bus: InMemory / Azure Service Bus) |
