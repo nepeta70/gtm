@@ -4,16 +4,17 @@ using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Authorization;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus.Settings;
+using GtMotive.Estimate.Microservice.Infrastructure.EventStore;
 using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure.Logging;
+using GtMotive.Estimate.Microservice.Infrastructure.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
 using GtMotive.Estimate.Microservice.Infrastructure.Persistence;
 using GtMotive.Estimate.Microservice.Infrastructure.Resilience;
 using GtMotive.Estimate.Microservice.Infrastructure.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver;
 using Polly;
 
 [assembly: CLSCompliant(false)]
@@ -59,32 +60,41 @@ namespace GtMotive.Estimate.Microservice.Infrastructure
 
             public InfrastructureBuilder AddMongoDb()
             {
-                Services.AddSingleton<IMongoClient>(sp =>
-                {
-                    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-                    return new MongoClient(settings.ConnectionString);
-                });
-
+                // 1. Register MongoService (handles MongoClient, Database, and Bson mapping)
                 Services.AddSingleton(sp =>
                 {
+                    var options = sp.GetRequiredService<IOptions<MongoDbSettings>>();
+                    return new MongoService(options);
+                });
+
+                // 2. Expose IMongoClient via DI by resolving from MongoService
+                Services.AddSingleton(sp => sp.GetRequiredService<MongoService>().MongoClient);
+
+                // 3. Expose IMongoDatabase via DI, running dev drop and indexes
+                Services.AddSingleton(sp =>
+                {
+                    var mongoService = sp.GetRequiredService<MongoService>();
                     var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-                    var client = sp.GetRequiredService<IMongoClient>();
 
                     if (IsDevelopment)
                     {
-                        client.DropDatabase(settings.MongoDbDatabaseName);
+                        mongoService.MongoClient.DropDatabase(settings.MongoDbDatabaseName);
                     }
 
-                    var database = client.GetDatabase(settings.MongoDbDatabaseName);
                     var pipeline = sp.GetRequiredKeyedService<ResiliencePipeline>(ResiliencePipelineNames.Mongo);
-                    VehicleCollectionSetup.EnsureIndexes(database, pipeline);
+                    VehicleCollectionSetup.EnsureIndexes(mongoService.Database, pipeline);
 
-                    return database;
+                    return mongoService.Database;
                 });
 
+                // 4. Register repositories
                 Services.AddScoped<IUnitOfWork, MongoUnitOfWork>();
                 Services.AddScoped<IVehicleReadRepository, MongoVehicleReadRepository>();
                 Services.AddScoped<IVehicleWriteRepository, MongoVehicleWriteRepository>();
+
+                // Register Event Store
+                Services.AddScoped<IEventStore, MongoEventStore>();
+
                 return this;
             }
 

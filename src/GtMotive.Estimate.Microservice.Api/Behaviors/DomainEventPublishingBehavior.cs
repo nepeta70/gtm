@@ -17,6 +17,7 @@ namespace GtMotive.Estimate.Microservice.Api.UseCases
     public sealed class DomainEventPublishingBehavior<TInput>(
         IDomainEventEnvelope eventCollector,
         IBusFactory busFactory,
+        IEventStore eventStore,
         IAppLogger<DomainEventPublishingBehavior<TInput>> logger)
         : IPipelineBehavior<UseCaseRequest<TInput>, Unit>
         where TInput : IUseCaseInput
@@ -34,6 +35,8 @@ namespace GtMotive.Estimate.Microservice.Api.UseCases
 
                 if (eventCollector.HasEvent)
                 {
+                    await eventStore.AppendAsync(eventCollector.DomainEvent, cancellationToken);
+
                     await busFactory
                         .GetClient(eventCollector.DomainEvent.GetType())
                         .Send(eventCollector.DomainEvent, cancellationToken);
@@ -51,6 +54,7 @@ namespace GtMotive.Estimate.Microservice.Api.UseCases
 
                 try
                 {
+                    await eventStore.AppendAsync(failureEvent, cancellationToken);
                     await busFactory.GetClient(typeof(UseCaseFailedEvent)).Send(failureEvent, cancellationToken);
                 }
                 catch (Exception busEx)

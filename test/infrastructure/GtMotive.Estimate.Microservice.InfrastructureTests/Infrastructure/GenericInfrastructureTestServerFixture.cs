@@ -34,6 +34,11 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
         {
             await _mongoContainer.StartAsync();
 
+            using (var tempClient = new MongoClient(_mongoContainer.GetConnectionString()))
+            {
+                await tempClient.DropDatabaseAsync(_testDbName);
+            }
+
             var hostBuilder = new HostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseEnvironment("IntegrationTest")
@@ -64,7 +69,7 @@ namespace GtMotive.Estimate.Microservice.InfrastructureTests.Infrastructure
             Server = _host.GetTestServer();
 
             _mongoClient = _host.Services.GetRequiredService<IMongoClient>();
-            await _mongoClient.DropDatabaseAsync(_testDbName);
+            _ = _host.Services.GetRequiredService<IMongoDatabase>();
         }
 
         public async Task DisposeAsync()
