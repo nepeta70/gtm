@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Ports;
@@ -22,16 +23,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<IReturnVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<ReturnVehicleUseCase>> _logger = new();
-        private readonly Mock<IBusFactory> _busFactory = new(MockBehavior.Strict);
-        private readonly Mock<IBus> _bus = new(MockBehavior.Strict);
-
-        public ReturnVehicleUseCaseTests()
-        {
-            // Setup the factory to always return our private _bus mock
-            _busFactory
-                .Setup(f => f.GetClient(typeof(VehicleReturnedEvent)))
-                .Returns(_bus.Object);
-        }
+        private readonly Mock<IDomainEventEnvelope> _eventCollector = new(MockBehavior.Strict);
 
         /// <summary>
         /// Verifies that executing the use case with a null input payload throws an <see cref="ArgumentNullException"/>.
@@ -102,13 +94,11 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Setup(u => u.Save(CancellationToken.None))
                 .ReturnsAsync(1);
 
-            _bus
-                .Setup(b => b.Send(
-                    It.Is<VehicleReturnedEvent>(e =>
-                        e.VehicleId == vehicle.Id &&
-                        e.ReturnedAt != default),
-                    CancellationToken.None))
-                .Returns(Task.CompletedTask);
+            _eventCollector
+                .Setup(c => c.Add(It.Is<VehicleReturnedEvent>(e =>
+                    e.VehicleId == vehicle.Id &&
+                    e.ReturnedAt != default)))
+                .Verifiable();
 
             _outputPort
                 .Setup(p => p.StandardHandle(It.Is<ReturnVehicleOutput>(output =>
@@ -124,7 +114,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(CancellationToken.None), Times.Once);
-            _bus.Verify(b => b.Send(It.IsAny<VehicleReturnedEvent>(), CancellationToken.None), Times.Once);
+            _eventCollector.Verify(c => c.Add(It.IsAny<VehicleReturnedEvent>()), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<ReturnVehicleOutput>()), Times.Once);
 
             VerifyNoOtherCalls();
@@ -162,7 +152,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
 
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
-            _unitOfWork.Verify(u => u.Save(), Times.Once);
+            _unitOfWork.Verify(u => u.Save(CancellationToken.None), Times.Once);
 
             VerifyNoOtherCalls();
         }
@@ -173,15 +163,14 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 _unitOfWork.Object,
                 _outputPort.Object,
                 _logger.Object,
-                _busFactory.Object);
+                _eventCollector.Object);
 
         private void VerifyNoOtherCalls()
         {
             _vehicleRepository.VerifyNoOtherCalls();
             _unitOfWork.VerifyNoOtherCalls();
             _outputPort.VerifyNoOtherCalls();
-            _busFactory.VerifyNoOtherCalls();
-            _bus.VerifyNoOtherCalls();
+            _eventCollector.VerifyNoOtherCalls();
         }
     }
 }

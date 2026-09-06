@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Ports;
@@ -24,16 +25,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         private readonly Mock<IUnitOfWork> _unitOfWork = new(MockBehavior.Strict);
         private readonly Mock<IRentVehicleOutputPort> _outputPort = new(MockBehavior.Strict);
         private readonly Mock<IAppLogger<RentVehicleUseCase>> _logger = new();
-        private readonly Mock<IBusFactory> _busFactory = new(MockBehavior.Strict);
-        private readonly Mock<IBus> _bus = new(MockBehavior.Strict);
-
-        public RentVehicleUseCaseTests()
-        {
-            // Setup the factory to always return our private _bus mock
-            _busFactory
-                .Setup(f => f.GetClient(typeof(VehicleRentedEvent)))
-                .Returns(_bus.Object);
-        }
+        private readonly Mock<IDomainEventEnvelope> _eventCollector = new(MockBehavior.Strict);
 
         /// <summary>
         /// Verifies that executing the use case with a null input payload throws an <see cref="ArgumentNullException"/>.
@@ -136,14 +128,12 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Setup(u => u.Save(CancellationToken.None))
                 .ReturnsAsync(1);
 
-            _bus
-                .Setup(b => b.Send(
-                    It.Is<VehicleRentedEvent>(e =>
-                        e.VehicleId == vehicle.Id &&
-                        e.RenterId == input.RenterId &&
-                        e.RentedAt != default),
-                    CancellationToken.None))
-                .Returns(Task.CompletedTask);
+            _eventCollector
+                .Setup(c => c.Add(It.Is<VehicleRentedEvent>(e =>
+                    e.VehicleId == vehicle.Id &&
+                    e.RenterId == input.RenterId &&
+                    e.RentedAt != default)))
+                .Verifiable();
 
             _outputPort
                 .Setup(p => p.StandardHandle(It.Is<RentVehicleOutput>(output =>
@@ -162,7 +152,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleReadRepository.Verify(r => r.HasActiveRentalAsync(input.RenterId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
             _unitOfWork.Verify(u => u.Save(CancellationToken.None), Times.Once);
-            _bus.Verify(b => b.Send(It.IsAny<VehicleRentedEvent>(), CancellationToken.None), Times.Once);
+            _eventCollector.Verify(c => c.Add(It.IsAny<VehicleRentedEvent>()), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<RentVehicleOutput>()), Times.Once);
 
             VerifyNoOtherCalls();
@@ -175,7 +165,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 _unitOfWork.Object,
                 _outputPort.Object,
                 _logger.Object,
-                _busFactory.Object);
+                _eventCollector.Object);
 
         private void VerifyNoOtherCalls()
         {
@@ -183,8 +173,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             _vehicleReadRepository.VerifyNoOtherCalls();
             _unitOfWork.VerifyNoOtherCalls();
             _outputPort.VerifyNoOtherCalls();
-            _busFactory.VerifyNoOtherCalls();
-            _bus.VerifyNoOtherCalls();
+            _eventCollector.VerifyNoOtherCalls();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Events;
@@ -18,14 +19,14 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
     /// <param name="unitOfWork">The unit of work port for transaction boundary management.</param>
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
+    /// <param name="eventCollector">The domain event envelope for collecting domain events.</param>
     public sealed class RentVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IVehicleReadRepository vehicleReadRepository,
         IUnitOfWork unitOfWork,
         IRentVehicleOutputPort outputPort,
         IAppLogger<RentVehicleUseCase> logger,
-        IBusFactory busFactory) : IUseCase<RentVehicleInput>
+        IDomainEventEnvelope eventCollector) : IUseCase<RentVehicleInput>
     {
         /// <summary>
         /// Executes the process of renting a vehicle to a customer.
@@ -66,7 +67,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
                 vehicle.RenterId,
                 vehicle.RentedAt.Value);
 
-            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent, cancellationToken);
+            eventCollector.Add(vehicleRentedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully rented to {RenterId}", vehicle.Id, vehicle.RenterId);
 

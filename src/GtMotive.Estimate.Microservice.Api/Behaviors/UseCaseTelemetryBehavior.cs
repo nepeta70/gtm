@@ -4,18 +4,22 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using GtMotive.Estimate.Microservice.Api.UseCases;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using MediatR;
 
-namespace GtMotive.Estimate.Microservice.Api.UseCases
+namespace GtMotive.Estimate.Microservice.Api.Behaviors
 {
     /// <summary>
     /// A MediatR pipeline behavior that tracks the execution time and success/failure rate
     /// of all use cases without polluting the use case code itself.
     /// </summary>
     /// <typeparam name="TInput">The type of the use-case input.</typeparam>
-    public sealed class UseCaseTelemetryBehavior<TInput>(ITelemetry telemetry, IAppLogger<UseCaseTelemetryBehavior<TInput>> logger) : IPipelineBehavior<UseCaseRequest<TInput>, Unit>
+    public sealed class UseCaseTelemetryBehavior<TInput>(
+        ITelemetry telemetry,
+        IAppLogger<UseCaseTelemetryBehavior<TInput>> logger)
+        : IPipelineBehavior<UseCaseRequest<TInput>, Unit>
         where TInput : IUseCaseInput
     {
         public async Task<Unit> Handle(

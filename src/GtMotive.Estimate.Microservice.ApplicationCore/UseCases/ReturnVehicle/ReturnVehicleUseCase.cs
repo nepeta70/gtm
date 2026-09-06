@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Events;
@@ -15,13 +16,13 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
     /// <param name="unitOfWork">The unit of work instance for transactional consistency.</param>
     /// <param name="outputPort">The output port handler for returning the response.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
+    /// <param name="eventCollector">The domain event envelope for collecting domain events.</param>
     public sealed class ReturnVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         IReturnVehicleOutputPort outputPort,
         IAppLogger<ReturnVehicleUseCase> logger,
-        IBusFactory busFactory) : IUseCase<ReturnVehicleInput>
+        IDomainEventEnvelope eventCollector) : IUseCase<ReturnVehicleInput>
     {
         /// <summary>
         /// Executes the process of returning a vehicle.
@@ -53,7 +54,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
                 vehicle.Id,
                 DateTime.UtcNow);
 
-            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent, cancellationToken);
+            eventCollector.Add(vehicleReturnedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully returned", vehicle.Id);
 

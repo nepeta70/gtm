@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Entities;
@@ -16,13 +17,13 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
     /// <param name="unitOfWork">The unit of work port for transaction boundary management.</param>
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
+    /// <param name="eventCollector">The domain event envelope for collecting domain events.</param>
     public sealed class CreateVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         ICreateVehicleOutputPort outputPort,
         IAppLogger<CreateVehicleUseCase> logger,
-        IBusFactory busFactory) : IUseCase<CreateVehicleInput>
+        IDomainEventEnvelope eventCollector) : IUseCase<CreateVehicleInput>
     {
         /// <summary>
         /// Executes the vehicle creation use case.
@@ -46,12 +47,10 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
             await vehicleRepository.AddAsync(vehicle, cancellationToken);
             await unitOfWork.Save(cancellationToken);
 
-            var vehicleCreatedEvent = new VehicleCreatedEvent(
+            eventCollector.Add(new VehicleCreatedEvent(
                 vehicle.Id,
                 vehicle.LicensePlate.Value,
-                DateTime.UtcNow);
-
-            await busFactory.GetClient(typeof(VehicleCreatedEvent)).Send(vehicleCreatedEvent, cancellationToken);
+                DateTime.UtcNow));
 
             logger.LogInformation("Vehicle {VehicleId} successfully created", vehicle.Id);
 
