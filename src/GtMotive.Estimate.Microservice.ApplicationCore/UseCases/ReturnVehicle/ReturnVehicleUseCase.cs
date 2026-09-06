@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Events;
-using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 
 namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
@@ -48,13 +47,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
                 return;
             }
 
-            if (vehicle.RenterId != input.RenterId)
-            {
-                logger.LogWarning("Vehicle {VehicleId} is not currently rented by {RenterId}", input.VehicleId, input.RenterId);
-                throw new DomainException($"Renter '{input.RenterId}' is not the current renter of vehicle '{input.VehicleId}'.");
-            }
-
-            vehicle.Return();
+            vehicle.Return(input.RenterId);
 
             await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
             await unitOfWork.Save();

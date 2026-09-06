@@ -126,11 +126,22 @@ namespace GtMotive.Estimate.Microservice.Domain.Entities
         /// <summary>
         /// Marks the vehicle as returned and available again.
         /// </summary>
-        public void Return()
+        /// <param name="renterId">Identifier of the person renting the vehicle.</param>
+        public void Return(string renterId)
         {
             if (Status == VehicleStatus.Available)
             {
                 throw new DomainException($"Vehicle '{Id}' is not currently rented.");
+            }
+
+            if (string.IsNullOrWhiteSpace(renterId))
+            {
+                throw new DomainException("RenterId is required to return a vehicle.");
+            }
+
+            if (RenterId != renterId)
+            {
+                throw new DomainException($"Vehicle '{Id}' is rented by another renter.");
             }
 
             Status = VehicleStatus.Available;
