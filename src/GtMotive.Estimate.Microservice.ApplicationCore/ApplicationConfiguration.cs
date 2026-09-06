@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Adapters;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle.Models;
@@ -32,6 +34,8 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore
             services.AddScoped<IUseCase<ListAvailableVehiclesInput>, ListAvailableVehiclesUseCase>();
             services.AddScoped<IUseCase<RentVehicleInput>, RentVehicleUseCase>();
             services.AddScoped<IUseCase<ReturnVehicleInput>, ReturnVehicleUseCase>();
+
+            services.AddScoped<IDomainEventEnvelope, DomainEventEnvelope>();
 
             return services;
         }

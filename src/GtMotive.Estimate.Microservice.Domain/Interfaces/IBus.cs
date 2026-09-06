@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace GtMotive.Estimate.Microservice.Domain.Interfaces
 {
@@ -11,7 +12,8 @@ namespace GtMotive.Estimate.Microservice.Domain.Interfaces
         /// Sends a message on the queue/topic associated to this client.
         /// </summary>
         /// <param name="message">Message.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A task to be resolved on when the operation has completed.</returns>
-        Task Send(object message);
+        Task Send(object message, CancellationToken cancellationToken = default);
     }
 }

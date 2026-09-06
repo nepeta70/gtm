@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 
@@ -25,7 +26,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Bus
         public IReadOnlyCollection<object> SentMessages => [.. _messages];
 
         /// <inheritdoc />
-        public Task Send(object message)
+        public Task Send(object message, CancellationToken cancellationToken = default)
         {
             if (message is null)
             {

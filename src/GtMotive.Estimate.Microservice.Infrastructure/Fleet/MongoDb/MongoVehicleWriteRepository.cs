@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using GtMotive.Estimate.Microservice.Domain.Entities;
 using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
+using GtMotive.Estimate.Microservice.Infrastructure.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.Persistence;
 using GtMotive.Estimate.Microservice.Infrastructure.Resilience;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,25 +32,25 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
         /// <summary>
         /// Initializes a new instance of the <see cref="MongoVehicleWriteRepository"/> class.
         /// </summary>
-        /// <param name="database">The MongoDB database.</param>
+        /// <param name="mongoService">The MongoDB service.</param>
         /// <param name="mapper">The AutoMapper instance.</param>
         /// <param name="logger">The application logger.</param>
         /// <param name="unitOfWork">The current unit of work.</param>
         /// <param name="mongoPipeline">The MongoDB resilience pipeline.</param>
         public MongoVehicleWriteRepository(
-            IMongoDatabase database,
+            MongoService mongoService,
             IMapper mapper,
             IAppLogger<MongoVehicleWriteRepository> logger,
             IUnitOfWork unitOfWork,
             [FromKeyedServices(ResiliencePipelineNames.Mongo)] ResiliencePipeline mongoPipeline)
         {
-            ArgumentNullException.ThrowIfNull(database);
+            ArgumentNullException.ThrowIfNull(mongoService);
             ArgumentNullException.ThrowIfNull(mapper);
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(unitOfWork);
             ArgumentNullException.ThrowIfNull(mongoPipeline);
 
-            _collection = database.GetCollection<VehicleDocument>(CollectionName);
+            _collection = mongoService.Database.GetCollection<VehicleDocument>(CollectionName);
             _mapper = mapper;
             _logger = logger;
             _unitOfWork = unitOfWork;
@@ -144,8 +145,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
                 .ExecuteAsync(
                     async ct => await _collection
                         .Find(d => d.Id == id)
-                        .FirstOrDefaultAsync(ct)
-                        .ConfigureAwait(false),
+                        .FirstOrDefaultAsync(ct),
                     cancellationToken);
 
             if (document is null)

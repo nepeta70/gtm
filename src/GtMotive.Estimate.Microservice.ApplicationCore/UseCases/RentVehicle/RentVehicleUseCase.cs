@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Events;
@@ -19,16 +19,14 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
     /// <param name="unitOfWork">The unit of work port for transaction boundary management.</param>
     /// <param name="outputPort">The output port to present use case execution results.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
-    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
+    /// <param name="eventCollector">The domain event envelope for collecting domain events.</param>
     public sealed class RentVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IVehicleReadRepository vehicleReadRepository,
         IUnitOfWork unitOfWork,
         IRentVehicleOutputPort outputPort,
         IAppLogger<RentVehicleUseCase> logger,
-        ITelemetry telemetry,
-        IBusFactory busFactory) : IUseCase<RentVehicleInput>
+        IDomainEventEnvelope eventCollector) : IUseCase<RentVehicleInput>
     {
         /// <summary>
         /// Executes the process of renting a vehicle to a customer.
@@ -62,24 +60,14 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
             vehicle.Rent(input.RenterId);
 
             await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
-            await unitOfWork.Save();
+            await unitOfWork.Save(cancellationToken);
 
             var vehicleRentedEvent = new VehicleRentedEvent(
                 vehicle.Id,
                 vehicle.RenterId,
                 vehicle.RentedAt.Value);
 
-            telemetry.TrackEvent(
-                nameof(VehicleRentedEvent),
-                new Dictionary<string, string>
-                {
-                    { nameof(vehicleRentedEvent.VehicleId), vehicleRentedEvent.VehicleId.ToString() },
-                    { nameof(vehicleRentedEvent.RenterId), vehicleRentedEvent.RenterId.ToString() }
-                });
-
-            telemetry.TrackMetric(nameof(VehicleRentedEvent), 1);
-
-            await busFactory.GetClient(typeof(VehicleRentedEvent)).Send(vehicleRentedEvent);
+            eventCollector.Add(vehicleRentedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully rented to {RenterId}", vehicle.Id, vehicle.RenterId);
 

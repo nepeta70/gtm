@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +46,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Bus
         }
 
         /// <inheritdoc />
-        public async Task Send(object message)
+        public async Task Send(object message, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentNullException.ThrowIfNull(message);
@@ -63,11 +63,10 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Bus
                 }
             };
 
-            // IBus.Send exposes no cancellation token; the pipeline's timeout still applies.
             await _resiliencePipeline
                 .ExecuteAsync(
                     async ct => await _sender.SendMessageAsync(serviceBusMessage, ct),
-                    CancellationToken.None);
+                    cancellationToken);
 
             _logger.LogInformation(
                 "Azure Service Bus sent message {MessageType} to {EntityPath}",

@@ -13,11 +13,10 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableV
     /// </summary>
     /// <param name="vehicleRepository">The vehicle repository instance.</param>
     /// <param name="outputPort">The output port handler for returning the response.</param>
-    public class ListAvailableVehiclesUseCase(IVehicleReadRepository vehicleRepository, IListAvailableVehiclesOutputPort outputPort) : IUseCase<ListAvailableVehiclesInput>
+    public sealed class ListAvailableVehiclesUseCase(
+        IVehicleReadRepository vehicleRepository,
+        IListAvailableVehiclesOutputPort outputPort) : IUseCase<ListAvailableVehiclesInput>
     {
-        private readonly IVehicleReadRepository _vehicleRepository = vehicleRepository;
-        private readonly IListAvailableVehiclesOutputPort _outputPort = outputPort;
-
         /// <summary>
         /// Executes the process of retrieving all available vehicles for rent.
         /// </summary>
@@ -28,13 +27,13 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ListAvailableV
         {
             ArgumentNullException.ThrowIfNull(input);
 
-            var vehicles = await _vehicleRepository.GetAvailableAsync(cancellationToken);
+            var vehicles = await vehicleRepository.GetAvailableAsync(cancellationToken);
 
             var dtos = vehicles
                 .Select(v => new AvailableVehicleDto(v.Id, v.Brand, v.Model, v.LicensePlate, v.ManufactureDate))
                 .ToList();
 
-            _outputPort.StandardHandle(new ListAvailableVehiclesOutput(dtos));
+            outputPort.StandardHandle(new ListAvailableVehiclesOutput(dtos));
         }
     }
 }

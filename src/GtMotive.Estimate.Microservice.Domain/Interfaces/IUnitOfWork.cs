@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace GtMotive.Estimate.Microservice.Domain.Interfaces
 {
@@ -11,6 +12,7 @@ namespace GtMotive.Estimate.Microservice.Domain.Interfaces
         /// Applies all database changes.
         /// </summary>
         /// <returns>Number of affected rows.</returns>
-        Task<int> Save();
+        /// <param name="cancellationToken">A token to cancel the operation.</param>
+        Task<int> Save(CancellationToken cancellationToken = default);
     }
 }

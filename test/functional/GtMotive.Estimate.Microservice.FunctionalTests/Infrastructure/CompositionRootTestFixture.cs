@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Api;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 using GtMotive.Estimate.Microservice.Infrastructure;
 using GtMotive.Estimate.Microservice.Infrastructure.Bus;
-using GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb;
 using GtMotive.Estimate.Microservice.Infrastructure.MongoDb.Settings;
-using GtMotive.Estimate.Microservice.Infrastructure.Resilience;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
-using Polly;
 using Testcontainers.MongoDb;
 using Xunit;
 
@@ -32,7 +28,6 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
         public CompositionRootTestFixture()
         {
             _testDbName = $"GtMotive_Test_{Guid.NewGuid():N}";
-
             _mongoContainer = new MongoDbBuilder("mongo:7.0").Build();
         }
 
@@ -55,31 +50,20 @@ namespace GtMotive.Estimate.Microservice.FunctionalTests.Infrastructure
 
             Configuration = configuration;
 
+            using (var tempClient = new MongoClient(_mongoContainer.GetConnectionString()))
+            {
+                await tempClient.DropDatabaseAsync(_testDbName);
+            }
+
             var services = new ServiceCollection();
             ConfigureServices(services);
             services.AddSingleton<IConfiguration>(configuration);
             services.Configure<MongoDbSettings>(Configuration.GetSection("MongoDb"));
 
-            // Replace default IMongoDatabase registration if it exists
-            var dbDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IMongoDatabase));
-            if (dbDescriptor is not null)
-            {
-                services.Remove(dbDescriptor);
-            }
-
-            services.AddSingleton(sp =>
-            {
-                var database = sp.GetRequiredService<IMongoClient>().GetDatabase(_testDbName);
-                var pipeline = sp.GetRequiredKeyedService<ResiliencePipeline>(ResiliencePipelineNames.Mongo);
-                VehicleCollectionSetup.EnsureIndexes(database, pipeline);
-                return database;
-            });
-
             _serviceProvider = services.BuildServiceProvider();
-            _mongoClient = _serviceProvider.GetRequiredService<IMongoClient>();
 
-            // Ensure a clean state before tests run
-            await _mongoClient.DropDatabaseAsync(_testDbName);
+            _mongoClient = _serviceProvider.GetRequiredService<IMongoClient>();
+            _ = _serviceProvider.GetRequiredService<IMongoDatabase>();
         }
 
         public async Task UsingHandlerForRequest<TRequest>(Func<IRequestHandler<TRequest, Unit>, Task> handlerAction)

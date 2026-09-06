@@ -17,7 +17,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void ConstructorWithValidDataCreatesAnAvailableVehicle()
         {
-            var manufactureDate = DateTime.UtcNow.AddYears(-1);
+            var manufactureDate = DateTime.Today.AddYears(-1);
 
             var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", manufactureDate);
 
@@ -32,7 +32,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void ConstructorWhenManufactureDateIsOlderThanFiveYearsThrowsDomainException()
         {
-            var manufactureDate = DateTime.UtcNow.AddYears(-6);
+            var manufactureDate = DateTime.Today.AddYears(-6);
 
             var act = () => new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", manufactureDate);
 
@@ -45,7 +45,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void ConstructorWhenManufactureDateIsInTheFutureThrowsDomainException()
         {
-            var manufactureDate = DateTime.UtcNow.AddDays(1);
+            var manufactureDate = DateTime.Today.AddDays(1);
 
             var act = () => new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", manufactureDate);
 
@@ -62,7 +62,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [InlineData(null)]
         public void ConstructorWhenBrandIsMissingThrowsDomainException(string brand)
         {
-            var act = () => new Vehicle(Guid.NewGuid(), brand, "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
+            var act = () => new Vehicle(Guid.NewGuid(), brand, "Corolla", "1234ABC", DateTime.Today.AddYears(-1));
 
             act.Should().Throw<DomainException>();
         }
@@ -73,7 +73,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void RentWhenVehicleIsAvailableMarksItAsRented()
         {
-            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
+            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.Today.AddYears(-1));
 
             vehicle.Rent("renter-1");
 
@@ -88,7 +88,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void RentWhenVehicleIsAlreadyRentedThrowsDomainException()
         {
-            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
+            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.Today.AddYears(-1));
             vehicle.Rent("renter-1");
 
             var act = () => vehicle.Rent("renter-2");
@@ -102,10 +102,11 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void ReturnWhenVehicleIsRentedMakesItAvailableAgain()
         {
-            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
-            vehicle.Rent("renter-1");
+            const string renterId = "renter-1";
+            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.Today.AddYears(-1));
+            vehicle.Rent(renterId);
 
-            vehicle.Return();
+            vehicle.Return(renterId);
 
             vehicle.Status.Should().Be(VehicleStatus.Available);
             vehicle.RenterId.Should().BeNull();
@@ -118,9 +119,23 @@ namespace GtMotive.Estimate.Microservice.UnitTests.Domain
         [Fact]
         public void ReturnWhenVehicleIsAlreadyAvailableThrowsDomainException()
         {
-            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.UtcNow.AddYears(-1));
+            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.Today.AddYears(-1));
 
-            var act = vehicle.Return;
+            var act = () => vehicle.Return("renter-1");
+
+            act.Should().Throw<DomainException>();
+        }
+
+        /// <summary>
+        /// Verifies that attempting to return a vehicle rented by another user throws a <see cref="DomainException"/>.
+        /// </summary>
+        [Fact]
+        public void ReturnWhenRenterIdDoesNotMatchThrowsDomainException()
+        {
+            var vehicle = new Vehicle(Guid.NewGuid(), "Toyota", "Corolla", "1234ABC", DateTime.Today.AddYears(-1));
+            vehicle.Rent("renter-1");
+
+            var act = () => vehicle.Return("renter-2");
 
             act.Should().Throw<DomainException>();
         }

@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using GtMotive.Estimate.Microservice.ApplicationCore.Events.Ports;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Models;
 using GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle.Ports;
 using GtMotive.Estimate.Microservice.Domain.Events;
-using GtMotive.Estimate.Microservice.Domain.Exceptions;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
 
 namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
@@ -17,15 +16,13 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
     /// <param name="unitOfWork">The unit of work instance for transactional consistency.</param>
     /// <param name="outputPort">The output port handler for returning the response.</param>
     /// <param name="logger">The application logging abstraction.</param>
-    /// <param name="telemetry">The telemetry abstraction for operational metrics.</param>
-    /// <param name="busFactory">The message bus factory abstraction for domain event publishing.</param>
+    /// <param name="eventCollector">The domain event envelope for collecting domain events.</param>
     public sealed class ReturnVehicleUseCase(
         IVehicleWriteRepository vehicleRepository,
         IUnitOfWork unitOfWork,
         IReturnVehicleOutputPort outputPort,
         IAppLogger<ReturnVehicleUseCase> logger,
-        ITelemetry telemetry,
-        IBusFactory busFactory) : IUseCase<ReturnVehicleInput>
+        IDomainEventEnvelope eventCollector) : IUseCase<ReturnVehicleInput>
     {
         /// <summary>
         /// Executes the process of returning a vehicle.
@@ -48,31 +45,16 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
                 return;
             }
 
-            if (vehicle.RenterId != input.RenterId)
-            {
-                logger.LogWarning("Vehicle {VehicleId} is not currently rented by {RenterId}", input.VehicleId, input.RenterId);
-                throw new DomainException($"Renter '{input.RenterId}' is not the current renter of vehicle '{input.VehicleId}'.");
-            }
-
-            vehicle.Return();
+            vehicle.Return(input.RenterId);
 
             await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
-            await unitOfWork.Save();
+            await unitOfWork.Save(cancellationToken);
 
             var vehicleReturnedEvent = new VehicleReturnedEvent(
                 vehicle.Id,
                 DateTime.UtcNow);
 
-            telemetry.TrackEvent(
-                nameof(VehicleReturnedEvent),
-                new Dictionary<string, string>
-                {
-                    { nameof(vehicleReturnedEvent.VehicleId), vehicleReturnedEvent.VehicleId.ToString() }
-                });
-
-            telemetry.TrackMetric(nameof(VehicleReturnedEvent), 1);
-
-            await busFactory.GetClient(typeof(VehicleReturnedEvent)).Send(vehicleReturnedEvent);
+            eventCollector.Add(vehicleReturnedEvent);
 
             logger.LogInformation("Vehicle {VehicleId} successfully returned", vehicle.Id);
 
