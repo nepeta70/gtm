@@ -22,7 +22,7 @@ namespace GtMotive.Estimate.Microservice.Api.UseCases
         public static Task SendUseCase<TInput>(
             this IMediator mediator,
             TInput input,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
             where TInput : IUseCaseInput
         {
             ArgumentNullException.ThrowIfNull(mediator);

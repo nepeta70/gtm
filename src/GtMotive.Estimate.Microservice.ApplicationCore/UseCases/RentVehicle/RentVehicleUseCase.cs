@@ -59,7 +59,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.RentVehicle
             vehicle.Rent(input.RenterId);
 
             await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
-            await unitOfWork.Save();
+            await unitOfWork.Save(cancellationToken);
 
             var vehicleRentedEvent = new VehicleRentedEvent(
                 vehicle.Id,

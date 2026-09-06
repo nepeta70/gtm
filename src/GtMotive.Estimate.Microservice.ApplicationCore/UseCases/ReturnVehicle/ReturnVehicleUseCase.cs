@@ -47,7 +47,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.ReturnVehicle
             vehicle.Return(input.RenterId);
 
             await vehicleRepository.UpdateAsync(vehicle, cancellationToken);
-            await unitOfWork.Save();
+            await unitOfWork.Save(cancellationToken);
 
             var vehicleReturnedEvent = new VehicleReturnedEvent(
                 vehicle.Id,

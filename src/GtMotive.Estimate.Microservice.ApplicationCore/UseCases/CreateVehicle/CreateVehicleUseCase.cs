@@ -44,7 +44,7 @@ namespace GtMotive.Estimate.Microservice.ApplicationCore.UseCases.CreateVehicle
                 input.ManufactureDate);
 
             await vehicleRepository.AddAsync(vehicle, cancellationToken);
-            await unitOfWork.Save();
+            await unitOfWork.Save(cancellationToken);
 
             var vehicleCreatedEvent = new VehicleCreatedEvent(
                 vehicle.Id,

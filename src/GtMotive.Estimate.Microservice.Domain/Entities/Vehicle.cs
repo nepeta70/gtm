@@ -151,12 +151,12 @@ namespace GtMotive.Estimate.Microservice.Domain.Entities
 
         private static void EnsureManufactureDateIsValid(DateTime manufactureDate)
         {
-            if (manufactureDate.Date > DateTime.UtcNow.Date)
+            if (manufactureDate.Date > DateTime.Today)
             {
                 throw new DomainException("Vehicle manufacture date cannot be in the future.");
             }
 
-            var minimumAllowedDate = DateTime.UtcNow.Date.AddYears(-MaxManufactureAgeInYears);
+            var minimumAllowedDate = DateTime.Today.AddYears(-MaxManufactureAgeInYears);
 
             if (manufactureDate.Date < minimumAllowedDate)
             {

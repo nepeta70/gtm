@@ -99,7 +99,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Returns(Task.CompletedTask);
 
             _unitOfWork
-                .Setup(u => u.Save())
+                .Setup(u => u.Save(CancellationToken.None))
                 .ReturnsAsync(1);
 
             _bus
@@ -123,7 +123,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
 
             _vehicleRepository.Verify(r => r.GetByIdAsync(input.VehicleId, CancellationToken.None), Times.Once);
             _vehicleRepository.Verify(r => r.UpdateAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
-            _unitOfWork.Verify(u => u.Save(), Times.Once);
+            _unitOfWork.Verify(u => u.Save(CancellationToken.None), Times.Once);
             _bus.Verify(b => b.Send(It.IsAny<VehicleReturnedEvent>(), CancellationToken.None), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<ReturnVehicleOutput>()), Times.Once);
 
@@ -151,7 +151,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Returns(Task.CompletedTask);
 
             _unitOfWork
-                .Setup(u => u.Save())
+                .Setup(u => u.Save(CancellationToken.None))
                 .ThrowsAsync(new InvalidOperationException("Database error"));
 
             var sut = CreateSut();

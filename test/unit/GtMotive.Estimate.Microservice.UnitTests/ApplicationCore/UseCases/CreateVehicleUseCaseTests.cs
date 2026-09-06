@@ -56,7 +56,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         [Fact]
         public async Task ExecuteWithValidInputCreatesVehicleAndPresentsOutput()
         {
-            var manufactureDate = DateTime.UtcNow.Date.AddYears(-1);
+            var manufactureDate = DateTime.Today.AddYears(-1);
             var input = new CreateVehicleInput("Toyota", "Corolla", "1234ABC", manufactureDate);
 
             _vehicleRepository
@@ -71,7 +71,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Returns(Task.CompletedTask);
 
             _unitOfWork
-                .Setup(u => u.Save())
+                .Setup(u => u.Save(CancellationToken.None))
                 .ReturnsAsync(1);
 
             _bus
@@ -97,7 +97,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             await sut.Execute(input, CancellationToken.None);
 
             _vehicleRepository.Verify(r => r.AddAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
-            _unitOfWork.Verify(u => u.Save(), Times.Once);
+            _unitOfWork.Verify(u => u.Save(CancellationToken.None), Times.Once);
             _bus.Verify(b => b.Send(It.IsAny<VehicleCreatedEvent>(), CancellationToken.None), Times.Once);
             _outputPort.Verify(p => p.StandardHandle(It.IsAny<CreateVehicleOutput>()), Times.Once);
 
@@ -111,7 +111,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
         [Fact]
         public async Task ExecuteWhenUnitOfWorkFailsDoesNotCallOutputPortOrBus()
         {
-            var manufactureDate = DateTime.UtcNow.Date.AddYears(-1);
+            var manufactureDate = DateTime.Today.AddYears(-1);
             var input = new CreateVehicleInput("Toyota", "Corolla", "1234ABC", manufactureDate);
 
             _vehicleRepository
@@ -119,7 +119,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
                 .Returns(Task.CompletedTask);
 
             _unitOfWork
-                .Setup(u => u.Save())
+                .Setup(u => u.Save(CancellationToken.None))
                 .ThrowsAsync(new InvalidOperationException("Database error"));
 
             var sut = CreateSut();
@@ -129,7 +129,7 @@ namespace GtMotive.Estimate.Microservice.UnitTests.ApplicationCore.UseCases
             await act.Should().ThrowAsync<InvalidOperationException>();
 
             _vehicleRepository.Verify(r => r.AddAsync(It.IsAny<Vehicle>(), CancellationToken.None), Times.Once);
-            _unitOfWork.Verify(u => u.Save(), Times.Once);
+            _unitOfWork.Verify(u => u.Save(CancellationToken.None), Times.Once);
 
             VerifyNoOtherCalls();
         }

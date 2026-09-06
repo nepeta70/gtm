@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using GtMotive.Estimate.Microservice.Domain.Interfaces;
@@ -78,7 +78,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Persistence
         }
 
         /// <inheritdoc />
-        public async Task<int> Save()
+        public async Task<int> Save(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -91,7 +91,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Persistence
                 .ExecuteAsync(
                     static async (session, ct) => await session.CommitTransactionAsync(ct).ConfigureAwait(false),
                     _session,
-                    CancellationToken.None);
+                    cancellationToken);
 
             _logger.LogInformation("MongoDB transaction committed.");
 

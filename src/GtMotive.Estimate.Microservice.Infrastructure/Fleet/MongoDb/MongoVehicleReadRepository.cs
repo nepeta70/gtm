@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +24,7 @@ namespace GtMotive.Estimate.Microservice.Infrastructure.Fleet.MongoDb
 
         public async Task<IReadOnlyCollection<VehicleReadModel>> GetAvailableAsync(CancellationToken cancellationToken)
         {
-            var minimumDate = DateTime.UtcNow.Date.AddYears(-Vehicle.MaxManufactureAgeInYears);
+            var minimumDate = DateTime.Today.AddYears(-Vehicle.MaxManufactureAgeInYears);
 
             logger.LogInformation("Retrieving available vehicles manufactured on or after {MinimumDate}", minimumDate);
 
